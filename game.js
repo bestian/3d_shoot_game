@@ -1,4 +1,7 @@
- // 初始化場景、相機和渲染器
+import shadow from './monster.js'
+import { createShadowMonster, updateShadowMonsters } from './monster.js';
+
+// 初始化場景、相機和渲染器
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
@@ -76,6 +79,7 @@ function createExplosion(position) {
 }
 
 let bullets = [];
+let monsters = [];
 
 // 處理鍵盤輸入
 const keys = {};
@@ -117,12 +121,32 @@ function animate() {
         bullet.position.add(bullet.velocity);
         bullet.distanceTraveled += bullet.velocity.length();
         
+        // 檢查子彈是否擊中怪物
+        monsters.forEach((monster, monsterIndex) => {
+            if (bullet.position.distanceTo(monster.position) < 0.5) {
+                createExplosion(monster.position);
+                scene.remove(monster);
+                monsters.splice(monsterIndex, 1);
+                scene.remove(bullet);
+                bullets.splice(index, 1);
+            }
+        });
+        
         if (bullet.distanceTraveled > 10) { // 子彈飛行20個單位後爆炸
             createExplosion(bullet.position);
             scene.remove(bullet);
             bullets.splice(index, 1);
         }
     });
+    
+    // 更新怪物
+    updateShadowMonsters(monsters, camera.position);
+    
+    // 隨機生成新的怪物
+    if (Math.random() < 0.02 && monsters.length < 5) {
+        const monster = createShadowMonster(scene, camera.position);
+        monsters.push(monster);
+    }
     
     renderer.render(scene, camera);
 }
