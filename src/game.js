@@ -1,5 +1,6 @@
-import shadow from './monster.js'
+import * as THREE from 'three';
 import { createShadowMonster, updateShadowMonsters } from './monster.js';
+
 
 // 初始化場景、相機和渲染器
 const scene = new THREE.Scene();
@@ -30,7 +31,7 @@ createWall(5, 1, 0);
 createWall(0, 1, -5);
 createWall(0, 1, 5);
 
-// 設置相機位置和旋轉
+// 設置相機位和旋轉
 camera.position.y = 1;
 camera.position.z = 5;
 camera.rotation.order = 'YXZ';
@@ -86,10 +87,62 @@ const keys = {};
 document.addEventListener('keydown', (event) => keys[event.code] = true);
 document.addEventListener('keyup', (event) => keys[event.code] = false);
 
+// 添加觸控控制相關變量
+let joystickActive = false;
+let joystickOrigin = { x: 0, y: 0 };
+let joystickPosition = { x: 0, y: 0 };
+
+// 初始化觸控控制
+function initTouchControls() {
+    const joystick = document.getElementById('joystick');
+    const joystickKnob = document.getElementById('joystick-knob');
+    const shootButton = document.getElementById('shoot-button');
+
+    joystick.addEventListener('touchstart', handleJoystickStart);
+    joystick.addEventListener('touchmove', handleJoystickMove);
+    joystick.addEventListener('touchend', handleJoystickEnd);
+
+    shootButton.addEventListener('touchstart', handleShoot);
+
+    function handleJoystickStart(event) {
+        joystickActive = true;
+        const touch = event.touches[0];
+        joystickOrigin.x = touch.clientX;
+        joystickOrigin.y = touch.clientY;
+    }
+
+    function handleJoystickMove(event) {
+        if (!joystickActive) return;
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - joystickOrigin.x;
+        const deltaY = touch.clientY - joystickOrigin.y;
+        const distance = Math.min(50, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+        const angle = Math.atan2(deltaY, deltaX);
+        joystickPosition.x = Math.cos(angle) * distance;
+        joystickPosition.y = Math.sin(angle) * distance;
+        joystickKnob.style.transform = `translate(${joystickPosition.x}px, ${joystickPosition.y}px)`;
+    }
+
+    function handleJoystickEnd() {
+        joystickActive = false;
+        joystickPosition = { x: 0, y: 0 };
+        joystickKnob.style.transform = 'translate(0, 0)';
+    }
+
+    function handleShoot() {
+        bullets.push(createBullet());
+    }
+}
+
+// 在遊戲初始化時調用
+initTouchControls();
+
+// 修改 handleInput 函數
 function handleInput() {
     const moveSpeed = 0.1;
     const rotateSpeed = 0.02;
 
+    // 處理鍵盤輸入
     if (keys['ArrowUp']) {
         camera.position.x -= Math.sin(camera.rotation.y) * moveSpeed;
         camera.position.z -= Math.cos(camera.rotation.y) * moveSpeed;
@@ -107,6 +160,17 @@ function handleInput() {
     if (keys['Space']) {
         bullets.push(createBullet());
         keys['Space'] = false; // 防止連續發射
+    }
+
+    // 處理觸控輸入
+    if (joystickActive) {
+        const joystickDistance = Math.sqrt(joystickPosition.x * joystickPosition.x + joystickPosition.y * joystickPosition.y);
+        const joystickAngle = Math.atan2(joystickPosition.x, -joystickPosition.y);
+
+        camera.rotation.y -= joystickPosition.x * rotateSpeed * 0.02;
+        // 修改這裡：將 joystickPosition.y 的符號反轉
+        camera.position.x += Math.sin(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
+        camera.position.z += Math.cos(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
     }
 }
 
