@@ -81,9 +81,40 @@
             color: white;
             user-select: none;
         }
+        #health-bar-container {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+        }
+        #health-bar {
+            width: 100%;
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 10px;
+            transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+        }
+        #darkness-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
+    <div id="health-bar-container">
+        <div id="health-bar"></div>
+    </div>
     <div id="crosshair">
         <div id="crosshair-circle"></div>
     </div>
@@ -91,5 +122,6 @@
         <div id="joystick-knob"></div>
     </div>
     <div id="shoot-button">射擊</div>
+    <div id="darkness-overlay"></div>
 </body>
 </html>

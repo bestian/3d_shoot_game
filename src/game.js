@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createShadowMonster, updateShadowMonsters } from './monster.js';
-
+import { GameMap } from './map.js';
 
 // 初始化場景、相機和渲染器
 const scene = new THREE.Scene();
@@ -9,32 +9,16 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// 創建地板
-const floorGeometry = new THREE.PlaneGeometry(20, 20);
-const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, side: THREE.DoubleSide });
-const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-floor.rotation.x = Math.PI / 2;
-scene.add(floor);
+// 創建遊戲地圖
+const gameMap = new GameMap(scene);
 
-// 創建牆壁函數
-function createWall(x, y, z) {
-    const wallGeometry = new THREE.BoxGeometry(1, 2, 1);
-    const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
-    const wall = new THREE.Mesh(wallGeometry, wallMaterial);
-    wall.position.set(x, y, z);
-    scene.add(wall);
-}
-
-// 添加一些牆壁
-createWall(-5, 1, 0);
-createWall(5, 1, 0);
-createWall(0, 1, -5);
-createWall(0, 1, 5);
-
-// 設置相機位和旋轉
-camera.position.y = 1;
-camera.position.z = 5;
+// 設置相機位置和旋轉
+const startPosition = gameMap.getPlayerStartPosition();
+camera.position.copy(startPosition);
 camera.rotation.order = 'YXZ';
+
+// 在文件頂部附近添加這行
+const playerRadius = 0.3;
 
 // 創建子彈函數
 function createBullet() {
@@ -81,6 +65,7 @@ function createExplosion(position) {
 
 let bullets = [];
 let monsters = [];
+let gameOver = false;
 
 // 處理鍵盤輸入
 const keys = {};
@@ -139,77 +124,144 @@ initTouchControls();
 
 // 修改 handleInput 函數
 function handleInput() {
+    if (gameOver) return;
+
     const moveSpeed = 0.1;
     const rotateSpeed = 0.02;
 
+    let newPosition = camera.position.clone();
+
     // 處理鍵盤輸入
-    if (keys['ArrowUp']) {
-        camera.position.x -= Math.sin(camera.rotation.y) * moveSpeed;
-        camera.position.z -= Math.cos(camera.rotation.y) * moveSpeed;
+    if (keys['ArrowUp'] || keys['KeyW']) {
+        newPosition.x -= Math.sin(camera.rotation.y) * moveSpeed;
+        newPosition.z -= Math.cos(camera.rotation.y) * moveSpeed;
     }
-    if (keys['ArrowDown']) {
-        camera.position.x += Math.sin(camera.rotation.y) * moveSpeed;
-        camera.position.z += Math.cos(camera.rotation.y) * moveSpeed;
+    if (keys['ArrowDown'] || keys['KeyS']) {
+        newPosition.x += Math.sin(camera.rotation.y) * moveSpeed;
+        newPosition.z += Math.cos(camera.rotation.y) * moveSpeed;
     }
-    if (keys['ArrowLeft']) {
+    if (keys['ArrowLeft'] || keys['KeyA']) {
         camera.rotation.y += rotateSpeed;
     }
-    if (keys['ArrowRight']) {
+    if (keys['ArrowRight'] || keys['KeyD']) {
         camera.rotation.y -= rotateSpeed;
     }
     if (keys['Space']) {
         bullets.push(createBullet());
-        keys['Space'] = false; // 防止連續發射
+        keys['Space'] = false; // 止連續發射
     }
 
     // 處理觸控輸入
     if (joystickActive) {
-        const joystickDistance = Math.sqrt(joystickPosition.x * joystickPosition.x + joystickPosition.y * joystickPosition.y);
-        const joystickAngle = Math.atan2(joystickPosition.x, -joystickPosition.y);
-
         camera.rotation.y -= joystickPosition.x * rotateSpeed * 0.02;
-        // 修改這裡：將 joystickPosition.y 的符號反轉
-        camera.position.x += Math.sin(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
-        camera.position.z += Math.cos(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
+        newPosition.x += Math.sin(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
+        newPosition.z += Math.cos(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
     }
+
+    // 檢查碰撞並更新位置
+    if (!checkWallCollision(newPosition)) {
+        camera.position.copy(newPosition);
+    }
+
+    // 檢查是否到達出口
+    if (gameMap.checkExitReached(newPosition, playerRadius)) {
+        gameOver = true;
+        showGameOverMessage("恭喜你離開洞穴!!", true);
+    }
+}
+
+function showGameOverMessage(message, isVictory) {
+    const messageElement = document.createElement('div');
+    messageElement.style.position = 'absolute';
+    messageElement.style.top = '50%';
+    messageElement.style.left = '50%';
+    messageElement.style.transform = 'translate(-50%, -50%)';
+    messageElement.style.backgroundColor = isVictory ? 'rgba(0, 128, 0, 0.7)' : 'rgba(128, 0, 0, 0.7)';
+    messageElement.style.color = 'white';
+    messageElement.style.padding = '20px';
+    messageElement.style.borderRadius = '10px';
+    messageElement.style.textAlign = 'center';
+    messageElement.innerHTML = `
+        <h2>${message}</h2>
+        <button id="restartButton">再玩一局</button>
+    `;
+    document.body.appendChild(messageElement);
+
+    document.getElementById('restartButton').addEventListener('click', restartGame);
+}
+
+function restartGame() {
+    gameOver = false;
+    playerHealth = 100;
+    updateHealthBar();
+    // 重置玩家位置到新的隨機起點
+    const newStartPosition = gameMap.getPlayerStartPosition();
+    camera.position.copy(newStartPosition);
+    camera.rotation.set(0, 0, 0);
+    // 清除所有怪物和子彈
+    monsters.forEach(monster => scene.remove(monster));
+    monsters = [];
+    bullets.forEach(bullet => scene.remove(bullet));
+    bullets = [];
+    // 移除遊戲結束消息
+    document.body.removeChild(document.body.lastChild);
+    // 重新創建隨機出口
+    gameMap.createRandomExit();
+}
+
+// 添加碰撞檢測函數
+function checkWallCollision(newPosition) {
+    return gameMap.checkWallCollision(newPosition, playerRadius);
 }
 
 // 遊戲循環
 function animate() {
     requestAnimationFrame(animate);
     
-    handleInput(); // 確保在每一幀都處理輸入
-    
-    // 更新子彈位置
-    bullets.forEach((bullet, index) => {
-        bullet.position.add(bullet.velocity);
-        bullet.distanceTraveled += bullet.velocity.length();
+    if (!gameOver) {
+        handleInput();
         
-        // 檢查子彈是否擊中怪物
-        monsters.forEach((monster, monsterIndex) => {
-            if (bullet.position.distanceTo(monster.position) < 0.5) {
-                createExplosion(monster.position);
-                scene.remove(monster);
-                monsters.splice(monsterIndex, 1);
+        // 更新子彈位置
+        bullets.forEach((bullet, index) => {
+            bullet.position.add(bullet.velocity);
+            bullet.distanceTraveled += bullet.velocity.length();
+            
+            // 檢查子彈是否擊中怪物
+            monsters.forEach((monster, monsterIndex) => {
+                if (bullet.position.distanceTo(monster.position) < 0.5) {
+                    createExplosion(monster.position);
+                    scene.remove(monster);
+                    monsters.splice(monsterIndex, 1);
+                    scene.remove(bullet);
+                    bullets.splice(index, 1);
+                }
+            });
+            
+            if (bullet.distanceTraveled > 10) { // 子彈飛行20個單位後爆炸
+                createExplosion(bullet.position);
                 scene.remove(bullet);
                 bullets.splice(index, 1);
             }
         });
         
-        if (bullet.distanceTraveled > 10) { // 子彈飛行20個單位後爆炸
-            createExplosion(bullet.position);
-            scene.remove(bullet);
-            bullets.splice(index, 1);
+        // 更新怪物
+        updateShadowMonsters(monsters, camera.position);
+        
+        // 檢查玩家是否被怪物碰到
+        monsters.forEach((monster, index) => {
+            if (monster.position.distanceTo(camera.position) < playerRadius + 0.5) {
+                damagePlayer();
+                createExplosion(monster.position);
+                scene.remove(monster);
+                monsters.splice(index, 1);
+            }
+        });
+        
+        // 隨機生成新的怪物
+        if (Math.random() < 0.02 && monsters.length < 5) {
+            const monster = createShadowMonster(scene, camera.position);
+            monsters.push(monster);
         }
-    });
-    
-    // 更新怪物
-    updateShadowMonsters(monsters, camera.position);
-    
-    // 隨機生成新的怪物
-    if (Math.random() < 0.02 && monsters.length < 5) {
-        const monster = createShadowMonster(scene, camera.position);
-        monsters.push(monster);
     }
     
     renderer.render(scene, camera);
@@ -225,3 +277,36 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
+let playerHealth = 100;
+const healthBar = document.getElementById('health-bar');
+
+function updateHealthBar() {
+    healthBar.style.width = `${playerHealth}%`;
+    if (playerHealth <= 20) {
+        healthBar.style.backgroundColor = '#FF0000';
+    } else if (playerHealth <= 60) {
+        healthBar.style.backgroundColor = '#FFA500';
+    } else {
+        healthBar.style.backgroundColor = '#4CAF50';
+    }
+
+    // 更新黑暗覆蓋層
+    const darknessOverlay = document.getElementById('darkness-overlay');
+    const maxOpacity = 0.7; // 最大不透明度
+    const opacity = maxOpacity * (1 - playerHealth / 100);
+    darknessOverlay.style.opacity = opacity;
+}
+
+// 玩家受傷函數
+function damagePlayer() {
+    playerHealth -= 10;
+    updateHealthBar();
+    if (playerHealth <= 0) {
+        gameOver = true;
+        showGameOverMessage("你被洞穴的影子吞沒了!!", false);
+    }
+}
+
+// 在遊戲初始化時調用
+updateHealthBar();
