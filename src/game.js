@@ -17,8 +17,21 @@ const startPosition = gameMap.getPlayerStartPosition();
 camera.position.copy(startPosition);
 camera.rotation.order = 'YXZ';
 
+// 在文件頂部添加或修改這些全局變量
+let moveJoystickActive = false;
+let viewJoystickActive = false;
+let moveJoystickOrigin = { x: 0, y: 0 };
+let viewJoystickOrigin = { x: 0, y: 0 };
+let moveJoystickPosition = { x: 0, y: 0 };
+let viewJoystickPosition = { x: 0, y: 0 };
+let autoShootInterval; // 添加這行
+
 // 在文件頂部附近添加這行
 const playerRadius = 0.3;
+
+// 在文件頂部附近添加這些新的變量
+const touchMoveSpeed = 1;
+const keyboardMoveSpeed = 0.3; // 降低鍵盤移動速度
 
 // 創建子彈函數
 function createBullet() {
@@ -72,91 +85,151 @@ const keys = {};
 document.addEventListener('keydown', (event) => keys[event.code] = true);
 document.addEventListener('keyup', (event) => keys[event.code] = false);
 
-// 添加觸控控制相關變量
-let joystickActive = false;
-let joystickOrigin = { x: 0, y: 0 };
-let joystickPosition = { x: 0, y: 0 };
-
-// 初始化觸控控制
+// 修改初始化觸控控制函數
 function initTouchControls() {
-    const joystick = document.getElementById('joystick');
-    const joystickKnob = document.getElementById('joystick-knob');
-    const shootButton = document.getElementById('shoot-button');
+    const moveJoystick = document.getElementById('joystick-move');
+    const moveJoystickKnob = document.getElementById('joystick-knob-move');
+    const viewJoystick = document.getElementById('joystick-view');
+    const viewJoystickKnob = document.getElementById('joystick-knob-view');
 
-    joystick.addEventListener('touchstart', handleJoystickStart);
-    joystick.addEventListener('touchmove', handleJoystickMove);
-    joystick.addEventListener('touchend', handleJoystickEnd);
+    moveJoystick.addEventListener('touchstart', (event) => handleJoystickStart(event, 'move'));
+    moveJoystick.addEventListener('touchmove', (event) => handleJoystickMove(event, 'move'));
+    moveJoystick.addEventListener('touchend', () => handleJoystickEnd('move'));
+    moveJoystick.addEventListener('touchcancel', () => handleJoystickEnd('move'));
 
-    shootButton.addEventListener('touchstart', handleShoot);
+    viewJoystick.addEventListener('touchstart', (event) => handleJoystickStart(event, 'view'));
+    viewJoystick.addEventListener('touchmove', (event) => handleJoystickMove(event, 'view'));
+    viewJoystick.addEventListener('touchend', () => handleJoystickEnd('view'));
+    viewJoystick.addEventListener('touchcancel', () => handleJoystickEnd('view'));
 
-    function handleJoystickStart(event) {
-        joystickActive = true;
+    function handleJoystickStart(event, type) {
+        event.preventDefault();
         const touch = event.touches[0];
-        joystickOrigin.x = touch.clientX;
-        joystickOrigin.y = touch.clientY;
+        const joystick = document.getElementById(`joystick-${type}`);
+        const rect = joystick.getBoundingClientRect();
+        if (type === 'move') {
+            moveJoystickActive = true;
+            moveJoystickOrigin.x = touch.clientX - rect.left;
+            moveJoystickOrigin.y = touch.clientY - rect.top;
+        } else {
+            viewJoystickActive = true;
+            viewJoystickOrigin.x = touch.clientX - rect.left;
+            viewJoystickOrigin.y = touch.clientY - rect.top;
+        }
     }
 
-    function handleJoystickMove(event) {
-        if (!joystickActive) return;
+    function handleJoystickMove(event, type) {
+        event.preventDefault();
+        if ((type === 'move' && !moveJoystickActive) || (type === 'view' && !viewJoystickActive)) return;
+
         const touch = event.touches[0];
-        const deltaX = touch.clientX - joystickOrigin.x;
-        const deltaY = touch.clientY - joystickOrigin.y;
-        const distance = Math.min(50, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
-        const angle = Math.atan2(deltaY, deltaX);
-        joystickPosition.x = Math.cos(angle) * distance;
-        joystickPosition.y = Math.sin(angle) * distance;
-        joystickKnob.style.transform = `translate(${joystickPosition.x}px, ${joystickPosition.y}px)`;
+        const joystick = document.getElementById(`joystick-${type}`);
+        const knob = document.getElementById(`joystick-knob-${type}`);
+        const rect = joystick.getBoundingClientRect();
+        
+        let deltaX, deltaY, distance, angle;
+        if (type === 'move') {
+            deltaX = touch.clientX - rect.left - moveJoystickOrigin.x;
+            deltaY = touch.clientY - rect.top - moveJoystickOrigin.y;
+        } else {
+            deltaX = touch.clientX - rect.left - viewJoystickOrigin.x;
+            deltaY = touch.clientY - rect.top - viewJoystickOrigin.y;
+        }
+
+        distance = Math.min(joystick.offsetWidth / 2, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+        angle = Math.atan2(deltaY, deltaX);
+
+        const knobX = Math.cos(angle) * distance;
+        const knobY = Math.sin(angle) * distance;
+
+        knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+        if (type === 'move') {
+            moveJoystickPosition.x = knobX / (joystick.offsetWidth / 2);
+            moveJoystickPosition.y = knobY / (joystick.offsetWidth / 2);
+        } else {
+            viewJoystickPosition.x = knobX / (joystick.offsetWidth / 2);
+            viewJoystickPosition.y = knobY / (joystick.offsetWidth / 2);
+        }
     }
 
-    function handleJoystickEnd() {
-        joystickActive = false;
-        joystickPosition = { x: 0, y: 0 };
-        joystickKnob.style.transform = 'translate(0, 0)';
+    function handleJoystickEnd(type) {
+        const knob = document.getElementById(`joystick-knob-${type}`);
+        if (type === 'move') {
+            moveJoystickActive = false;
+            moveJoystickPosition = { x: 0, y: 0 };
+        } else {
+            viewJoystickActive = false;
+            viewJoystickPosition = { x: 0, y: 0 };
+        }
+        knob.style.transform = 'translate(0, 0)';
     }
 
-    function handleShoot() {
-        bullets.push(createBullet());
-    }
+    // 開始自動發射子彈
+    startAutoShooting();
 }
 
-// 在遊戲初始化時調用
+// 確保在遊戲初始化時調用這個函數
 initTouchControls();
+
+// 自動發射子彈函數
+function startAutoShooting() {
+    // 清除舊的計時器（如果存在）
+    if (autoShootInterval) {
+        clearInterval(autoShootInterval);
+    }
+    autoShootInterval = setInterval(() => {
+        if (!gameOver) {
+            bullets.push(createBullet());
+        }
+    }, 1000); // 每1秒發射一次
+}
 
 // 修改 handleInput 函數
 function handleInput() {
     if (gameOver) return;
 
-    const moveSpeed = 0.1;
-    const rotateSpeed = 0.02;
+    const rotateSpeed = 0.5;
+    const keyboardRotateSpeed = 0.03;
 
     let newPosition = camera.position.clone();
 
-    // 處理鍵盤輸入
-    if (keys['ArrowUp'] || keys['KeyW']) {
-        newPosition.x -= Math.sin(camera.rotation.y) * moveSpeed;
-        newPosition.z -= Math.cos(camera.rotation.y) * moveSpeed;
-    }
-    if (keys['ArrowDown'] || keys['KeyS']) {
-        newPosition.x += Math.sin(camera.rotation.y) * moveSpeed;
-        newPosition.z += Math.cos(camera.rotation.y) * moveSpeed;
-    }
-    if (keys['ArrowLeft'] || keys['KeyA']) {
-        camera.rotation.y += rotateSpeed;
-    }
-    if (keys['ArrowRight'] || keys['KeyD']) {
-        camera.rotation.y -= rotateSpeed;
-    }
-    if (keys['Space']) {
-        bullets.push(createBullet());
-        keys['Space'] = false; // 止連續發射
+    // 處理移動搖桿輸入
+    if (moveJoystickActive) {
+        const moveAngle = Math.atan2(moveJoystickPosition.y, moveJoystickPosition.x);
+        const moveMagnitude = Math.sqrt(moveJoystickPosition.x ** 2 + moveJoystickPosition.y ** 2) / 6;
+        
+        newPosition.x += Math.cos(moveAngle) * touchMoveSpeed * moveMagnitude;
+        newPosition.z += Math.sin(moveAngle) * touchMoveSpeed * moveMagnitude;
     }
 
-    // 處理觸控輸入
-    if (joystickActive) {
-        camera.rotation.y -= joystickPosition.x * rotateSpeed * 0.02;
-        newPosition.x += Math.sin(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
-        newPosition.z += Math.cos(camera.rotation.y) * joystickPosition.y * moveSpeed * 0.02;
+    // 處理視角搖桿輸入
+    if (viewJoystickActive) {
+        const viewMagnitudeX = viewJoystickPosition.x / 30;
+        const viewMagnitudeY = viewJoystickPosition.y / 30;
+        camera.rotation.y -= viewMagnitudeX * rotateSpeed;
+        camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x - viewMagnitudeY * rotateSpeed));
     }
+
+    // 處理鍵盤輸入
+    if (keys['KeyW'] || keys['ArrowUp']) {
+        newPosition.z -= keyboardMoveSpeed * Math.cos(camera.rotation.y);
+        newPosition.x -= keyboardMoveSpeed * Math.sin(camera.rotation.y);
+    }
+    if (keys['KeyS'] || keys['ArrowDown']) {
+        newPosition.z += keyboardMoveSpeed * Math.cos(camera.rotation.y);
+        newPosition.x += keyboardMoveSpeed * Math.sin(camera.rotation.y);
+    }
+    if (keys['KeyA']) {
+        newPosition.x -= keyboardMoveSpeed * Math.cos(camera.rotation.y);
+        newPosition.z += keyboardMoveSpeed * Math.sin(camera.rotation.y);
+    }
+    if (keys['KeyD']) {
+        newPosition.x += keyboardMoveSpeed * Math.cos(camera.rotation.y);
+        newPosition.z -= keyboardMoveSpeed * Math.sin(camera.rotation.y);
+    }
+    if (keys['ArrowLeft']) camera.rotation.y += keyboardRotateSpeed;
+    if (keys['ArrowRight']) camera.rotation.y -= keyboardRotateSpeed;
 
     // 檢查碰撞並更新位置
     if (!checkWallCollision(newPosition)) {
@@ -171,6 +244,7 @@ function handleInput() {
 }
 
 function showGameOverMessage(message, isVictory) {
+    clearInterval(autoShootInterval);
     const messageElement = document.createElement('div');
     messageElement.style.position = 'absolute';
     messageElement.style.top = '50%';
@@ -207,6 +281,8 @@ function restartGame() {
     document.body.removeChild(document.body.lastChild);
     // 重新創建隨機出口
     gameMap.createRandomExit();
+    // 重新啟動自動射擊
+    startAutoShooting();
 }
 
 // 添加碰撞檢測函數

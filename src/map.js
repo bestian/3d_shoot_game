@@ -32,18 +32,17 @@ export class GameMap {
         this.createWall(0, 1, -20, 40, 2, 1);
         this.createWall(0, 1, 20, 40, 2, 1);
 
-        // 內部牆壁
-        this.createWall(-10, 1, -10, 1, 2, 20);
-        this.createWall(10, 1, 10, 1, 2, 20);
-        this.createWall(-5, 1, 5, 10, 2, 1);
-        this.createWall(5, 1, -5, 10, 2, 1);
+        // 內部牆壁（已移除部分牆壁以連通空間）
+        this.createWall(-10, 1, -15, 1, 2, 10); // 縮短並移動
+        this.createWall(10, 1, 15, 1, 2, 10);   // 縮短並移動
+        this.createWall(-5, 1, 5, 8, 2, 1);     // 縮短
+        this.createWall(5, 1, -5, 8, 2, 1);     // 縮短
 
         // 修改後的內部牆壁
-        this.createWall(-15, 1, 0, 10, 2, 1);
-        this.createWall(15, 1, 0, 10, 2, 1);
-        // 移除了 (0, 15) 和 (0, -15) 的牆壁
-        this.createWall(-7, 1, 10, 1, 2, 10);
-        this.createWall(7, 1, -10, 1, 2, 10);
+        this.createWall(-15, 1, 0, 8, 2, 1);    // 縮短
+        this.createWall(15, 1, 0, 8, 2, 1);     // 縮短
+        this.createWall(-7, 1, 10, 1, 2, 8);    // 縮短
+        this.createWall(7, 1, -10, 1, 2, 8);    // 縮短
     }
 
     createRandomExit() {
@@ -84,15 +83,14 @@ export class GameMap {
             {x: 20, z: 0, width: 1, depth: 40},
             {x: 0, z: -20, width: 40, depth: 1},
             {x: 0, z: 20, width: 40, depth: 1},
-            {x: -10, z: -10, width: 1, depth: 20},
-            {x: 10, z: 10, width: 1, depth: 20},
-            {x: -5, z: 5, width: 10, depth: 1},
-            {x: 5, z: -5, width: 10, depth: 1},
-            // 新增的內部牆壁
-            {x: -15, z: 0, width: 10, depth: 1},
-            {x: 15, z: 0, width: 10, depth: 1},
-            {x: -7, z: 10, width: 1, depth: 10},
-            {x: 7, z: -10, width: 1, depth: 10}
+            {x: -10, z: -15, width: 1, depth: 10},
+            {x: 10, z: 15, width: 1, depth: 10},
+            {x: -5, z: 5, width: 8, depth: 1},
+            {x: 5, z: -5, width: 8, depth: 1},
+            {x: -15, z: 0, width: 8, depth: 1},
+            {x: 15, z: 0, width: 8, depth: 1},
+            {x: -7, z: 10, width: 1, depth: 8},
+            {x: 7, z: -10, width: 1, depth: 8}
         ];
 
         for (let wall of walls) {

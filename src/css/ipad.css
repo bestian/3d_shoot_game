@@ -1,25 +1,28 @@
 /* iPad 專用樣式 */
 @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
-    #joystick {
-        width: 150px;
-        height: 150px;
-        position: fixed;
+    #joystick-move {
         bottom: 30px;
         left: 30px;
     }
 
-    #joystick-knob {
+    #joystick-knob-move {
         width: 60px;
         height: 60px;
     }
 
-    #shoot-button {
-        width: 100px;
-        height: 100px;
-        font-size: 32px;
-        position: fixed;
+    #joystick-view {
         bottom: 30px;
         right: 30px;
+    }
+
+    #joystick-knob-view {
+        width: 60px;
+        height: 60px;
+    }
+
+    /* 移除射擊按鈕樣式 */
+    #shoot-button {
+        display: none;
     }
 
     #health-bar-container {
