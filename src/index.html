@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>柏拉圖空間的射擊遊戲</title>
     <link rel="icon" type="image/png" href="./favicon.png">
     
@@ -15,7 +15,14 @@
     <meta property="og:locale" content="zh_TW">
     
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
         canvas { display: block; }
         #crosshair {
             position: fixed;
@@ -119,7 +126,14 @@
             pointer-events: none;
             transition: opacity 0.5s ease-in-out;
         }
+        
+        * {
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
     </style>
+    
+    <!-- 移除了之前添加的 CSS 文件導入 -->
 </head>
 <body>
     <div id="health-bar-container">
