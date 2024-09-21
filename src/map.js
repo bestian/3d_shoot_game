@@ -38,11 +38,10 @@ export class GameMap {
         this.createWall(-5, 1, 5, 10, 2, 1);
         this.createWall(5, 1, -5, 10, 2, 1);
 
-        // 新增的內部牆壁
+        // 修改後的內部牆壁
         this.createWall(-15, 1, 0, 10, 2, 1);
         this.createWall(15, 1, 0, 10, 2, 1);
-        this.createWall(0, 1, 15, 1, 2, 10);
-        this.createWall(0, 1, -15, 1, 2, 10);
+        // 移除了 (0, 15) 和 (0, -15) 的牆壁
         this.createWall(-7, 1, 10, 1, 2, 10);
         this.createWall(7, 1, -10, 1, 2, 10);
     }
@@ -92,8 +91,6 @@ export class GameMap {
             // 新增的內部牆壁
             {x: -15, z: 0, width: 10, depth: 1},
             {x: 15, z: 0, width: 10, depth: 1},
-            {x: 0, z: 15, width: 1, depth: 10},
-            {x: 0, z: -15, width: 1, depth: 10},
             {x: -7, z: 10, width: 1, depth: 10},
             {x: 7, z: -10, width: 1, depth: 10}
         ];
