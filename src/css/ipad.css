@@ -34,4 +34,45 @@
     #health-bar {
         height: 100%;
     }
+
+    #crosshair {
+        width: 100px;
+        height: 100px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        background-color: rgba(255, 255, 255, 0.1); /* 用於調試 */
+    }
+
+    #crosshair::before,
+    #crosshair::after {
+        content: '';
+        position: absolute;
+        background-color: red;
+        width: 4px;
+        height: 100%;
+    }
+
+    #crosshair::before {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    #crosshair::after {
+        top: 50%;
+        transform: translateY(-50%) rotate(90deg);
+    }
+
+    #crosshair-circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 30px;
+        height: 30px;
+        border: 4px solid red;
+        border-radius: 50%;
+    }
 }
