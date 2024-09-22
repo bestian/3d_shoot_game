@@ -2,12 +2,24 @@ import * as THREE from 'three';
 import { createShadowMonster, updateShadowMonsters } from './monster.js';
 import { GameMap } from './map.js';
 
+const monster_path = './assets/shadow_monster.png';
+
+
 // 初始化場景、相機和渲染器
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// 添加環境光
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+
+// 添加平行光
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+directionalLight.position.set(0, 1, 0);
+scene.add(directionalLight);
 
 // 創建遊戲地圖
 const gameMap = new GameMap(scene);
@@ -29,7 +41,7 @@ const playerRadius = 0.3;
 
 // 在文件頂部附近添加這些新的變量
 const touchMoveSpeed = 1;
-const keyboardMoveSpeed = 0.3; // 降低鍵盤移動速度
+const keyboardMoveSpeed = 0.3; // 降鍵盤移動速度
 
 // 創建子彈函數
 function createBullet() {
@@ -339,8 +351,10 @@ function animate() {
         
         // 隨機生成新的怪物
         if (Math.random() < 0.02 && monsters.length < 5) {
-            const monster = createShadowMonster(scene, camera.position);
-            monsters.push(monster);
+            const monster = createShadowMonster(scene, monster_path);
+            if (monster) {
+                monsters.push(monster);
+            }
         }
     }
     

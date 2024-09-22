@@ -136,4 +136,20 @@ export class GameMap {
 
         return startPosition;
     }
+
+    getRandomPosition() {
+        const mapSize = 40;
+        const margin = 2; // 距離邊緣的最小距離
+        let position;
+        
+        do {
+            position = new THREE.Vector3(
+                Math.random() * (mapSize - 2 * margin) - (mapSize / 2 - margin),
+                1,
+                Math.random() * (mapSize - 2 * margin) - (mapSize / 2 - margin)
+            );
+        } while (this.checkWallCollision(position, 0.5)); // 確保位置不在牆內
+
+        return position;
+    }
 }
