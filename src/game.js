@@ -18,10 +18,8 @@ camera.position.copy(startPosition);
 camera.rotation.order = 'YXZ';
 
 // 在文件頂部添加或修改這些全局變量
-let moveJoystickActive = false;
-let viewJoystickActive = false;
-let moveJoystickOrigin = { x: 0, y: 0 };
-let viewJoystickOrigin = { x: 0, y: 0 };
+let moveJoystickTouch = null;
+let viewJoystickTouch = null;
 let moveJoystickPosition = { x: 0, y: 0 };
 let viewJoystickPosition = { x: 0, y: 0 };
 let autoShootInterval; // 添加這行
@@ -92,52 +90,61 @@ function initTouchControls() {
     const viewJoystick = document.getElementById('joystick-view');
     const viewJoystickKnob = document.getElementById('joystick-knob-view');
 
-    moveJoystick.addEventListener('touchstart', (event) => handleJoystickStart(event, 'move'));
-    moveJoystick.addEventListener('touchmove', (event) => handleJoystickMove(event, 'move'));
-    moveJoystick.addEventListener('touchend', () => handleJoystickEnd('move'));
-    moveJoystick.addEventListener('touchcancel', () => handleJoystickEnd('move'));
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchcancel', handleTouchEnd);
 
-    viewJoystick.addEventListener('touchstart', (event) => handleJoystickStart(event, 'view'));
-    viewJoystick.addEventListener('touchmove', (event) => handleJoystickMove(event, 'view'));
-    viewJoystick.addEventListener('touchend', () => handleJoystickEnd('view'));
-    viewJoystick.addEventListener('touchcancel', () => handleJoystickEnd('view'));
-
-    function handleJoystickStart(event, type) {
+    function handleTouchStart(event) {
         event.preventDefault();
-        const touch = event.touches[0];
-        const joystick = document.getElementById(`joystick-${type}`);
-        const rect = joystick.getBoundingClientRect();
-        if (type === 'move') {
-            moveJoystickActive = true;
-            moveJoystickOrigin.x = touch.clientX - rect.left;
-            moveJoystickOrigin.y = touch.clientY - rect.top;
-        } else {
-            viewJoystickActive = true;
-            viewJoystickOrigin.x = touch.clientX - rect.left;
-            viewJoystickOrigin.y = touch.clientY - rect.top;
-        }
+        Array.from(event.changedTouches).forEach(touch => {
+            const moveJoystickRect = moveJoystick.getBoundingClientRect();
+            const viewJoystickRect = viewJoystick.getBoundingClientRect();
+
+            if (touch.clientX >= moveJoystickRect.left && touch.clientX <= moveJoystickRect.right &&
+                touch.clientY >= moveJoystickRect.top && touch.clientY <= moveJoystickRect.bottom) {
+                moveJoystickTouch = touch;
+                updateJoystickPosition(moveJoystick, moveJoystickKnob, touch, 'move');
+            } else if (touch.clientX >= viewJoystickRect.left && touch.clientX <= viewJoystickRect.right &&
+                       touch.clientY >= viewJoystickRect.top && touch.clientY <= viewJoystickRect.bottom) {
+                viewJoystickTouch = touch;
+                updateJoystickPosition(viewJoystick, viewJoystickKnob, touch, 'view');
+            }
+        });
     }
 
-    function handleJoystickMove(event, type) {
+    function handleTouchMove(event) {
         event.preventDefault();
-        if ((type === 'move' && !moveJoystickActive) || (type === 'view' && !viewJoystickActive)) return;
+        Array.from(event.changedTouches).forEach(touch => {
+            if (touch.identifier === moveJoystickTouch?.identifier) {
+                updateJoystickPosition(moveJoystick, moveJoystickKnob, touch, 'move');
+            } else if (touch.identifier === viewJoystickTouch?.identifier) {
+                updateJoystickPosition(viewJoystick, viewJoystickKnob, touch, 'view');
+            }
+        });
+    }
 
-        const touch = event.touches[0];
-        const joystick = document.getElementById(`joystick-${type}`);
-        const knob = document.getElementById(`joystick-knob-${type}`);
+    function handleTouchEnd(event) {
+        Array.from(event.changedTouches).forEach(touch => {
+            if (touch.identifier === moveJoystickTouch?.identifier) {
+                resetJoystick(moveJoystickKnob, 'move');
+                moveJoystickTouch = null;
+            } else if (touch.identifier === viewJoystickTouch?.identifier) {
+                resetJoystick(viewJoystickKnob, 'view');
+                viewJoystickTouch = null;
+            }
+        });
+    }
+
+    function updateJoystickPosition(joystick, knob, touch, type) {
         const rect = joystick.getBoundingClientRect();
-        
-        let deltaX, deltaY, distance, angle;
-        if (type === 'move') {
-            deltaX = touch.clientX - rect.left - moveJoystickOrigin.x;
-            deltaY = touch.clientY - rect.top - moveJoystickOrigin.y;
-        } else {
-            deltaX = touch.clientX - rect.left - viewJoystickOrigin.x;
-            deltaY = touch.clientY - rect.top - viewJoystickOrigin.y;
-        }
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let deltaX = touch.clientX - centerX;
+        let deltaY = touch.clientY - centerY;
 
-        distance = Math.min(joystick.offsetWidth / 2, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
-        angle = Math.atan2(deltaY, deltaX);
+        const distance = Math.min(joystick.offsetWidth / 2, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+        const angle = Math.atan2(deltaY, deltaX);
 
         const knobX = Math.cos(angle) * distance;
         const knobY = Math.sin(angle) * distance;
@@ -153,16 +160,13 @@ function initTouchControls() {
         }
     }
 
-    function handleJoystickEnd(type) {
-        const knob = document.getElementById(`joystick-knob-${type}`);
+    function resetJoystick(knob, type) {
+        knob.style.transform = 'translate(0, 0)';
         if (type === 'move') {
-            moveJoystickActive = false;
             moveJoystickPosition = { x: 0, y: 0 };
         } else {
-            viewJoystickActive = false;
             viewJoystickPosition = { x: 0, y: 0 };
         }
-        knob.style.transform = 'translate(0, 0)';
     }
 
     // 開始自動發射子彈
@@ -195,7 +199,7 @@ function handleInput() {
     let newPosition = camera.position.clone();
 
     // 處理移動搖桿輸入
-    if (moveJoystickActive) {
+    if (moveJoystickTouch) {
         const moveAngle = Math.atan2(moveJoystickPosition.y, moveJoystickPosition.x);
         const moveMagnitude = Math.sqrt(moveJoystickPosition.x ** 2 + moveJoystickPosition.y ** 2) / 6;
         
@@ -204,7 +208,7 @@ function handleInput() {
     }
 
     // 處理視角搖桿輸入
-    if (viewJoystickActive) {
+    if (viewJoystickTouch) {
         const viewMagnitudeX = viewJoystickPosition.x / 30;
         const viewMagnitudeY = viewJoystickPosition.y / 30;
         camera.rotation.y -= viewMagnitudeX * rotateSpeed;
