@@ -94,11 +94,14 @@ export class GameMap {
         ];
 
         for (let wall of walls) {
+            const wallMinX = wall.x - wall.width / 2 - playerRadius;
+            const wallMaxX = wall.x + wall.width / 2 + playerRadius;
+            const wallMinZ = wall.z - wall.depth / 2 - playerRadius;
+            const wallMaxZ = wall.z + wall.depth / 2 + playerRadius;
+
             if (
-                position.x + playerRadius > wall.x - wall.width / 2 &&
-                position.x - playerRadius < wall.x + wall.width / 2 &&
-                position.z + playerRadius > wall.z - wall.depth / 2 &&
-                position.z - playerRadius < wall.z + wall.depth / 2
+                position.x >= wallMinX && position.x <= wallMaxX &&
+                position.z >= wallMinZ && position.z <= wallMaxZ
             ) {
                 return true; // 發生碰撞
             }
