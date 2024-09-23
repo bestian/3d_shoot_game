@@ -1,23 +1,13 @@
 /* iPad 專用樣式 */
 @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
     #joystick-move {
-        bottom: 30px;
-        left: 30px;
-    }
-
-    #joystick-knob-move {
-        width: 60px;
-        height: 60px;
+        bottom: 20px;
+        left: 20px;
     }
 
     #joystick-view {
-        bottom: 30px;
-        right: 30px;
-    }
-
-    #joystick-knob-view {
-        width: 60px;
-        height: 60px;
+        bottom: 20px;
+        right: 20px;
     }
 
     /* 移除射擊按鈕樣式 */
@@ -25,17 +15,19 @@
         display: none;
     }
 
-    #health-bar-container {
-        width: 300px;
-        height: 30px;
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
+    #joystick {
+        width: 80px;
+        height: 80px;
     }
 
-    #health-bar {
-        height: 100%;
+    #joystick-knob {
+        width: 30px;
+        height: 30px;
+    }
+
+    #health-bar-container {
+        width: 180px;
+        height: 18px;
     }
 
     #crosshair {

@@ -43,4 +43,25 @@
         border-radius: 50%;
         box-sizing: border-box; /* 確保邊框計算在內 */
     }
+
+    /* 新增滑動控制樣式 */
+    #joystick-move {
+        bottom: 20px;
+        left: 20px;
+    }
+
+    #joystick-view {
+        bottom: 20px;
+        right: 20px;
+    }
+
+    #joystick {
+        width: 80px;
+        height: 80px;
+    }
+
+    #joystick-knob {
+        width: 30px;
+        height: 30px;
+    }
 }

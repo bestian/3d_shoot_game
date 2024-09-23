@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 let moveJoystickTouch = null;
 let viewJoystickTouch = null;
 let moveJoystickPosition = { x: 0, y: 0 };
@@ -90,6 +88,7 @@ function initTouchControls(scene, camera, createBullet, getGameOver) {
         // 新增以下代碼，確保搖桿回到圓心
         resetJoystick(moveJoystickKnob, 'move');
         resetJoystick(viewJoystickKnob, 'view');
+
     }
 }
 
@@ -123,12 +122,14 @@ function resetJoystick(knob, type) {
     } else {
         viewJoystickPosition = { x: 0, y: 0 };
     }
+    // 重置滑杆旋钮的视觉位置
+    knob.style.transform = 'translate(-20px, -20px)';
 }
 
 function handleInput(camera, getGameOver, checkWallCollision, playerRadius, gameMap) {
     if (getGameOver()) return false;
 
-    const rotateSpeed = 0.05;
+    const rotateSpeed = 0.1;
     const moveSpeed = keyboardMoveSpeed;
 
     let newPosition = camera.position.clone();
@@ -175,7 +176,7 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
 
     if (moveForward || moveBackward || moveLeft || moveRight) {
         const moveX = ((moveLeft ? -1 : 0) + (moveRight ? 1 : 0)) * moveSpeed;
-        const moveZ = ((moveForward ? 1 : 0) + (moveBackward ? -1 : 0)) * moveSpeed;
+        const moveZ = ((moveForward ? 1 : 0) + (moveBackward ? -1 : 0)) * moveSpeed; // 調整前後方向
 
         const rotatedMoveX = moveX * Math.cos(camera.rotation.y) - moveZ * Math.sin(camera.rotation.y);
         const rotatedMoveZ = moveX * Math.sin(camera.rotation.y) + moveZ * Math.cos(camera.rotation.y);
@@ -188,7 +189,7 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
         }
 
         tempPosition = newPosition.clone();
-        tempPosition.z += rotatedMoveZ;
+        tempPosition.z -= rotatedMoveZ;
         if (!checkWallCollision(tempPosition, playerRadius)) {
             newPosition.z = tempPosition.z;
             moved = true;
@@ -196,10 +197,10 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
     }
 
     if (keys['ArrowLeft']) {
-        camera.rotation.y += rotateSpeed;
+        camera.rotation.y += keyboardRotateSpeed;
     }
     if (keys['ArrowRight']) {
-        camera.rotation.y -= rotateSpeed;
+        camera.rotation.y -= keyboardRotateSpeed;
     }
 
     // 更新相机位置
