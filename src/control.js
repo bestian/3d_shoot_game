@@ -134,38 +134,40 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
     let newPosition = camera.position.clone();
     let moved = false;
 
-    // 處理移動搖桿輸入
+    // 处理触摸摇杆移动输入
     if (moveJoystickTouch) {
-        const moveAngle = Math.atan2(moveJoystickPosition.y, moveJoystickPosition.x);
-        const moveMagnitude = Math.sqrt(moveJoystickPosition.x ** 2 + moveJoystickPosition.y ** 2) / 6;
-        
-        const moveX = Math.cos(moveAngle) * touchMoveSpeed * moveMagnitude;
-        const moveZ = -Math.sin(moveAngle) * touchMoveSpeed * moveMagnitude; // 修改這裡，加上負號
-        
+        // 使用摇杆位置直接作为移动向量，并根据需要进行缩放
+        const moveX = moveJoystickPosition.x * touchMoveSpeed;
+        const moveZ = moveJoystickPosition.y * touchMoveSpeed;
+
+        // 根据相机的旋转来调整移动向量
+        const rotatedMoveX = moveX * Math.cos(camera.rotation.y) - moveZ * Math.sin(camera.rotation.y);
+        const rotatedMoveZ = moveX * Math.sin(camera.rotation.y) + moveZ * Math.cos(camera.rotation.y);
+
         let tempPosition = newPosition.clone();
-        tempPosition.x += moveX;
+        tempPosition.x += rotatedMoveX;
         if (!checkWallCollision(tempPosition, playerRadius)) {
             newPosition.x = tempPosition.x;
             moved = true;
         }
 
         tempPosition = newPosition.clone();
-        tempPosition.z -= moveZ;
+        tempPosition.z += rotatedMoveZ;
         if (!checkWallCollision(tempPosition, playerRadius)) {
             newPosition.z = tempPosition.z;
             moved = true;
         }
     }
 
-    // 處理視角搖桿輸入
+    // 处理视角摇杆输入
     if (viewJoystickTouch) {
-        const viewMagnitudeX = viewJoystickPosition.x / 5; // 將除數從30改為5，增加6倍速度
-        const viewMagnitudeY = viewJoystickPosition.y / 5; // 將除數從30改為5，增加6倍速度
+        const viewMagnitudeX = viewJoystickPosition.x / 5;
+        const viewMagnitudeY = viewJoystickPosition.y / 5;
         camera.rotation.y -= viewMagnitudeX * rotateSpeed;
         camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x - viewMagnitudeY * rotateSpeed));
     }
 
-    // 處理鍵盤輸入
+    // 处理键盘输入
     const moveForward = keys['KeyW'] || keys['ArrowUp'];
     const moveBackward = keys['KeyS'] || keys['ArrowDown'];
     const moveLeft = keys['KeyA'];
@@ -186,7 +188,7 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
         }
 
         tempPosition = newPosition.clone();
-        tempPosition.z -= rotatedMoveZ;
+        tempPosition.z += rotatedMoveZ;
         if (!checkWallCollision(tempPosition, playerRadius)) {
             newPosition.z = tempPosition.z;
             moved = true;
@@ -200,17 +202,17 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
         camera.rotation.y -= rotateSpeed;
     }
 
-    // 更新相機位置
+    // 更新相机位置
     if (moved) {
         camera.position.copy(newPosition);
     }
 
-    // 檢查是否到達出口
+    // 检查是否到达出口
     if (gameMap.checkExitReached(camera.position, playerRadius)) {
-        return true; // 表示玩家已到達出口
+        return true; // 表示玩家已到达出口
     }
 
-    return false; // 表示玩家未到達出口
+    return false; // 表示玩家未到达出口
 }
 
 function startAutoShooting(scene, camera, createBullet, getGameOver, onBulletCreated) {
