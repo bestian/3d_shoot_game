@@ -32,7 +32,7 @@ camera.rotation.order = 'YXZ';
 // 在文件頂部附近添加這些新的變量
 const playerRadius = 0.3;
 
-// 修改創建子彈函數
+// 修改創建子彈���數
 function createBullet(camera) {
     const bulletGeometry = new THREE.SphereGeometry(0.1, 32, 32);
     const bulletMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -197,7 +197,7 @@ function damagePlayer() {
 }
 
 function showGameOverMessage(message, isVictory) {
-    controls.stopAutoShooting();
+    // 移除 controls.stopAutoShooting();
     const messageElement = document.createElement('div');
     messageElement.style.position = 'absolute';
     messageElement.style.top = '50%';
@@ -232,12 +232,9 @@ function restartGame() {
     bullets = [];
     // 移除遊戲結束消息
     document.body.removeChild(document.body.lastChild);
-    // 重新創建隨機出��
+    // 重新創建隨機出
     gameMap.createRandomExit();
-    // 重新啟動自動射擊
-    controls.startAutoShooting();
 }
 
-// 在遊戲初始化時啟動自動射擊
+// 移除遊戲初始化時啟動自動射擊的代碼
 updateHealthBar();
-controls.startAutoShooting();  // 使用控制模組的 startAutoShooting 函數

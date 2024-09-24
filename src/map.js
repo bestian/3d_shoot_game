@@ -51,14 +51,17 @@ export class GameMap {
             this.scene.remove(this.exit);
         }
 
-        const exitGeometry = new THREE.PlaneGeometry(2, 2);
-        const exitMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00, side: THREE.DoubleSide });
+        const exitGeometry = new THREE.CylinderGeometry(1, 1, 4, 32);
+        const exitMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xFFFF00, 
+            transparent: true, 
+            opacity: 0.5 
+        });
         this.exit = new THREE.Mesh(exitGeometry, exitMaterial);
-        this.exit.rotation.x = Math.PI / 2;
         
         // 隨機生成出口位置
         let exitPosition = this.getRandomExitPosition();
-        this.exit.position.set(exitPosition.x, 0.01, exitPosition.z);
+        this.exit.position.set(exitPosition.x, 2, exitPosition.z);
         
         this.scene.add(this.exit);
     }
@@ -118,7 +121,7 @@ export class GameMap {
             Math.pow(position.x - exitPosition.x, 2) +
             Math.pow(position.z - exitPosition.z, 2)
         );
-        return distance < (playerRadius + 1);
+        return distance < (1 + playerRadius); // 使用柱子的半徑 (1) 加上玩家半徑
     }
 
     getPlayerStartPosition() {

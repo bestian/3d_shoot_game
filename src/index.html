@@ -62,10 +62,10 @@
             height: 100%;
             border: 2px solid rgba(255, 255, 255, 0.7);
             border-radius: 50%;
-            box-sizing: border-box; /* 確保邊框計算在內 */
+            box-sizing: border-box;
         }
         /* 控制圈樣式 */
-        #joystick-move, #joystick-view {
+        #joystick-move {
             position: fixed;
             width: 100px;
             height: 100px;
@@ -77,11 +77,7 @@
             bottom: 20px;
             left: 20px;
         }
-        #joystick-view {
-            bottom: 20px;
-            right: 20px;
-        }
-        #joystick-knob-move, #joystick-knob-view {
+        #joystick-knob-move {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -91,9 +87,23 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
         }
-        /* 移除射擊按鈕樣式 */
+        /* 射擊按鈕樣式 */
         #shoot-button {
-            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            border: none;
+            outline: none;
+            cursor: pointer;
         }
         #health-bar-container {
             position: fixed;
@@ -129,8 +139,6 @@
             -webkit-tap-highlight-color: transparent;
         }
     </style>
-    
-    <!-- 移除了之前添加的 CSS 文件導入 -->
 </head>
 <body>
     <div id="health-bar-container">
@@ -143,11 +151,8 @@
     <div id="joystick-move">
         <div id="joystick-knob-move"></div>
     </div>
-    <!-- 視角控制圈 -->
-    <div id="joystick-view">
-        <div id="joystick-knob-view"></div>
-    </div>
-    <!-- 移除射擊按鈕 -->
     <div id="darkness-overlay"></div>
+    <!-- 射擊按鈕 -->
+    <button id="shoot-button">射擊</button>
 </body>
 </html>
