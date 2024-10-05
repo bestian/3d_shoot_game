@@ -1,6 +1,6 @@
 # 3D Shoot Game
 
-A small 3D shooting game built with web technologies.
+A small 3D shooting game built with web technologies, inspired by Plato's Cave.
 
 ## Getting Started
 
