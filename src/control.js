@@ -2,8 +2,8 @@ let moveJoystickTouch = null;
 let moveJoystickPosition = { x: 0, y: 0 };
 
 // 調整觸摸移動速度，使其與鍵盤移動速度相近
-const touchMoveSpeed = 0.3; // 將其設置為與 keyboardMoveSpeed 相同
-const keyboardMoveSpeed = 0.3;
+const touchMoveSpeed = 0.05; // 將其設置為原來的1/6
+const keyboardMoveSpeed = 0.05; // 將其設置為原來的1/6
 const keyboardRotateSpeed = 0.03;
 
 const keys = {};
@@ -18,7 +18,14 @@ export function initControls(
     gameMap,
     onBulletCreated
 ) {
-    document.addEventListener('keydown', (event) => keys[event.code] = true);
+    document.addEventListener('keydown', (event) => {
+        keys[event.code] = true;
+        if (event.code === 'Space' && !getGameOver()) {
+            const bullet = createBullet(camera);
+            scene.add(bullet);
+            onBulletCreated(bullet);
+        }
+    });
     document.addEventListener('keyup', (event) => keys[event.code] = false);
 
     initTouchControls(scene, camera, createBullet, getGameOver);
