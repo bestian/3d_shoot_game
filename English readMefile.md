@@ -27,10 +27,12 @@ his will:
 
 Start a development server
 Open the project in your browser
-Hot-reload functionality may be supported, which will automatically refresh your browser when you modify and save files.
+Hot-reload functionality may be supported, automatically refreshing your browser when you modify and save files.
 
-Notes
+## Notes
 Ensure that your project root directory contains an index.html file or another entry point.
 The development server may use a different port depending on your project configuration. Check the terminal output for the correct URL.
 
 This README is concise and guides users on how to set up and run your 3D shoot game project.
+## License
+MIT 
