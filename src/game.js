@@ -101,7 +101,7 @@ function animate() {
         const exitReached = controls.handleInput();
         if (exitReached) {
             gameOver = true;
-            showGameOverMessage("恭喜你離開洞穴!!", true);
+            showGameOverMessage("恭喜你離開\n洞穴!!", true);
         }
         
         // 更新子彈位置
