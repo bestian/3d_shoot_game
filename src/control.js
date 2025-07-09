@@ -141,14 +141,14 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
 
         let tempPosition = newPosition.clone();
         tempPosition.x += rotatedMoveX;
-        if (!checkWallCollision(tempPosition, playerRadius)) {
+        if (!checkWallCollision || !checkWallCollision(tempPosition, playerRadius)) {
             newPosition.x = tempPosition.x;
             moved = true;
         }
 
         tempPosition = newPosition.clone();
         tempPosition.z += rotatedMoveZ;
-        if (!checkWallCollision(tempPosition, playerRadius)) {
+        if (!checkWallCollision || !checkWallCollision(tempPosition, playerRadius)) {
             newPosition.z = tempPosition.z;
             moved = true;
         }
@@ -168,14 +168,14 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
 
         let tempPosition = newPosition.clone();
         tempPosition.x += rotatedMoveX;
-        if (!checkWallCollision(tempPosition, playerRadius)) {
+        if (!checkWallCollision || !checkWallCollision(tempPosition, playerRadius)) {
             newPosition.x = tempPosition.x;
             moved = true;
         }
 
         tempPosition = newPosition.clone();
         tempPosition.z -= rotatedMoveZ;
-        if (!checkWallCollision(tempPosition, playerRadius)) {
+        if (!checkWallCollision || !checkWallCollision(tempPosition, playerRadius)) {
             newPosition.z = tempPosition.z;
             moved = true;
         }
@@ -192,8 +192,10 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
         camera.position.copy(newPosition);
     }
 
-    if (gameMap.checkExitReached(camera.position, playerRadius)) {
-        return true;
+    if (gameMap && gameMap.checkExitReached && gameMap.mapSize) {
+        if (gameMap.checkExitReached(camera.position, playerRadius)) {
+            return true;
+        }
     }
 
     return false;

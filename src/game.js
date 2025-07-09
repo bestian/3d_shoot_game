@@ -21,13 +21,79 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
 directionalLight.position.set(0, 1, 0);
 scene.add(directionalLight);
 
-// 創建遊戲地圖
-const gameMap = new GameMap(scene);
+// 遊戲狀態變數
+let gameMap = null;
+let selectedDifficulty = 'easy';
+let gameStarted = false;
+let controls = null;
 
-// 設置相機位置和旋轉
-const startPosition = gameMap.getPlayerStartPosition();
-camera.position.copy(startPosition);
-camera.rotation.order = 'YXZ';
+// 初始化遊戲（但不立即開始）
+function initGame(difficulty) {
+    selectedDifficulty = difficulty;
+    
+    // 清除現有地圖
+    if (gameMap) {
+        // 只清除Three.js場景中的物件，保留DOM元素
+        const objectsToRemove = [];
+        scene.children.forEach(child => {
+            // 保留光源，只清除其他物件
+            if (child !== ambientLight && child !== directionalLight) {
+                objectsToRemove.push(child);
+            }
+        });
+        objectsToRemove.forEach(child => {
+            scene.remove(child);
+        });
+    }
+    
+    // 創建新地圖
+    gameMap = new GameMap(scene, difficulty);
+    
+    // 設置相機位置和旋轉
+    const startPosition = gameMap.getPlayerStartPosition();
+    camera.position.copy(startPosition);
+    camera.rotation.order = 'YXZ';
+    
+    // 隱藏難度選擇器
+    const difficultySelector = document.getElementById('difficulty-selector');
+    if (difficultySelector) difficultySelector.style.display = 'none';
+    
+    // 顯示遊戲UI元素
+    const healthBar = document.getElementById('health-bar-container');
+    const disasterContainer = document.getElementById('disaster-container');
+    const crosshair = document.getElementById('crosshair');
+    const joystick = document.getElementById('joystick-move');
+    const shootButton = document.getElementById('shoot-button');
+    
+    if (healthBar) healthBar.style.display = 'block';
+    if (disasterContainer) disasterContainer.style.display = 'block';
+    if (crosshair) crosshair.style.display = 'block';
+    if (joystick) joystick.style.display = 'block';
+    if (shootButton) shootButton.style.display = 'block';
+    
+    // 初始化控制系統
+    controls = initControls(
+        scene,
+        camera,
+        createBullet,
+        () => gameOver, // 傳遞 gameOver 的 getter 函數
+        (position, radius) => gameMap ? gameMap.checkWallCollision(position, radius) : false,
+        playerRadius,
+        gameMap,
+        (bullet) => {
+            bullets.push(bullet); // 將新創建的子彈加入 bullets 數組
+        }
+    );
+    
+    // 開始遊戲
+    gameStarted = true;
+    startGameTimer();
+}
+
+// 全域函數供HTML調用
+window.selectDifficulty = function(difficulty) {
+    initGame(difficulty);
+};
 
 // 在文件頂部附近添加這些新的變量
 const playerRadius = 0.3;
@@ -430,25 +496,13 @@ function createFallingRock() {
     }, 2000);
 }
 
-// 初始化控制，新增一個回調函數來處理新創建的子彈
-const controls = initControls(
-    scene,
-    camera,
-    createBullet,
-    () => gameOver, // 傳遞 gameOver 的 getter 函數
-    gameMap.checkWallCollision,
-    playerRadius,
-    gameMap,
-    (bullet) => {
-        bullets.push(bullet); // 將新創建的子彈加入 bullets 數組
-    }
-);
+// 初始化控制系統（在遊戲開始時初始化）
 
 // 修改遊戲循環
 function animate() {
     requestAnimationFrame(animate);
     
-    if (!gameOver) {
+    if (!gameOver && gameStarted && gameMap && controls) {
         const exitReached = controls.handleInput();
         if (exitReached) {
             // 停止所有計時器
@@ -573,8 +627,8 @@ function animate() {
         });
         
         // 隨機生成新的怪物
-        if (Math.random() < 0.02 && monsters.length < 5) {
-            const monster = createShadowMonster(scene, monster_path);
+        if (Math.random() < 0.02 && monsters.length < 5 && gameMap) {
+            const monster = createShadowMonster(scene, monster_path, gameMap);
             if (monster) {
                 monsters.push(monster);
             }
@@ -692,10 +746,27 @@ function restartGame() {
     
     // 重新創建隨機出口
     gameMap.createRandomExit();
+    
+    // 隱藏遊戲UI元素
+    const healthBar = document.getElementById('health-bar-container');
+    const disasterContainer = document.getElementById('disaster-container');
+    const crosshair = document.getElementById('crosshair');
+    const joystick = document.getElementById('joystick-move');
+    const shootButton = document.getElementById('shoot-button');
+    const difficultySelector = document.getElementById('difficulty-selector');
+    
+    if (healthBar) healthBar.style.display = 'none';
+    if (disasterContainer) disasterContainer.style.display = 'none';
+    if (crosshair) crosshair.style.display = 'none';
+    if (joystick) joystick.style.display = 'none';
+    if (shootButton) shootButton.style.display = 'none';
+    
+    // 顯示難度選擇器
+    if (difficultySelector) difficultySelector.style.display = 'block';
+    gameStarted = false;
 }
 
 // 移除遊戲初始化時啟動自動射擊的代碼
 updateHealthBar();
 
-// 啟動遊戲計時器
-startGameTimer();
+// 不自動啟動遊戲，等待玩家選擇難度

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // 創建影子怪物的函數
-export function createShadowMonster(scene, texturePath) {
+export function createShadowMonster(scene, texturePath, gameMap = null) {
     const geometry = new THREE.PlaneGeometry(1, 2); // 改用平面幾何體
     
     // 創建紋理加載器
@@ -21,7 +21,7 @@ export function createShadowMonster(scene, texturePath) {
     const monster = new THREE.Mesh(geometry, material);
     
     // 設定怪物的初始位置
-    const startPosition = getRandomStartPosition();
+    const startPosition = getRandomStartPosition(gameMap);
     monster.position.copy(startPosition);
     
     scene.add(monster);
@@ -44,11 +44,20 @@ export function updateShadowMonsters(monsters, playerPosition) {
 }
 
 // 獲取隨機起始位置的函數
-function getRandomStartPosition() {
+function getRandomStartPosition(gameMap = null) {
+    let mapSize = 40; // 預設大小
+    
+    // 如果有gameMap，使用其大小
+    if (gameMap && gameMap.mapSize) {
+        mapSize = gameMap.mapSize;
+    }
+    
+    const halfSize = mapSize / 2;
+    
     // 在場景邊緣隨機生成怪物
     const edge = Math.random() < 0.5 ? -1 : 1;
-    const x = edge * (Math.random() * 10 + 10); // 在 -20 到 -10 或 10 到 20 之間
-    const z = edge * (Math.random() * 10 + 10);
+    const x = edge * (Math.random() * (halfSize * 0.3) + (halfSize * 0.7)); // 在邊緣區域生成
+    const z = edge * (Math.random() * (halfSize * 0.3) + (halfSize * 0.7));
     return new THREE.Vector3(x, 1, z); // 假設怪物的 y 位置為 1
 }
 
