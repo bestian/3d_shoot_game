@@ -126,6 +126,51 @@
             color: #ffa500;
             font-size: 14px;
         }
+        #difficulty-selector {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 2000;
+            font-family: Arial, sans-serif;
+        }
+        .difficulty-button {
+            display: block;
+            width: 200px;
+            margin: 10px auto;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .difficulty-button:hover {
+            transform: scale(1.05);
+        }
+        .easy-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .hard-button {
+            background-color: #FF9800;
+            color: white;
+        }
+        .inferno-button {
+            background-color: #f44336;
+            color: white;
+        }
+        .difficulty-description {
+            font-size: 14px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
         #darkness-overlay {
             position: fixed;
             top: 0;
@@ -154,4 +199,4 @@
                         console.log('ServiceWorker registration failed: ', err);
                     });
             });
-        }</script><script defer="defer" src="bundle.js"></script><link href="main.a5e55c35052d6c1b7a7e.css" rel="stylesheet"></head><body><div id="health-bar-container"><div id="health-bar"></div></div><div id="disaster-container">下一災難: <span id="next-disaster">未知</span><br>倒數: <span id="disaster-timer">0</span>秒</div><div id="crosshair"><div id="crosshair-circle"></div></div><div id="joystick-move"><div id="joystick-knob-move"></div></div><div id="darkness-overlay"></div><button id="shoot-button">射擊</button></body></html>
+        }</script><script defer="defer" src="bundle.js"></script><link href="main.a5e55c35052d6c1b7a7e.css" rel="stylesheet"></head><body><div id="difficulty-selector"><h2>選擇難度</h2><button class="difficulty-button easy-button" onclick="selectDifficulty('easy')">簡易模式<div class="difficulty-description">40x40 迷宮，12道牆</div></button> <button class="difficulty-button hard-button" onclick="selectDifficulty('hard')">困難模式<div class="difficulty-description">60x60 迷宮，18道牆</div></button> <button class="difficulty-button inferno-button" onclick="selectDifficulty('inferno')">煉獄模式<div class="difficulty-description">80x80 迷宮，24道牆</div></button></div><div id="health-bar-container" style="display: none;"><div id="health-bar"></div></div><div id="disaster-container" style="display: none;">下一災難: <span id="next-disaster">未知</span><br>倒數: <span id="disaster-timer">0</span>秒</div><div id="crosshair" style="display: none;"><div id="crosshair-circle"></div></div><div id="joystick-move" style="display: none;"><div id="joystick-knob-move"></div></div><div id="darkness-overlay"></div><button id="shoot-button" style="display: none;">射擊</button></body></html>
