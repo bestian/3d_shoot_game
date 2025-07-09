@@ -2,7 +2,7 @@ let moveJoystickTouch = null;
 let moveJoystickPosition = { x: 0, y: 0 };
 
 // 調整觸摸移動速度，使其與鍵盤移動速度相近
-const touchMoveSpeed = 0.05; // 將其設置為原來的1/6
+const touchMoveSpeed = 0.08; // 將其設置為0.08
 const keyboardMoveSpeed = 0.05; // 將其設置為原來的1/6
 const keyboardRotateSpeed = 0.03;
 
@@ -122,7 +122,7 @@ function resetJoystick(knob, type) {
 function handleInput(camera, getGameOver, checkWallCollision, playerRadius, gameMap) {
     if (getGameOver()) return false;
 
-    const rotateSpeed = 0.1;
+    const rotateSpeed = 0.15;
     const moveSpeed = keyboardMoveSpeed;
 
     let newPosition = camera.position.clone();
