@@ -147,6 +147,13 @@ function startGameTimer() {
                 break;
             case 3: // 死亡
                 if (disasterTimer === 0) {
+                    // 停止所有計時器
+                    if (disasterInterval) {
+                        clearInterval(disasterInterval);
+                    }
+                    if (rockFallInterval) {
+                        clearInterval(rockFallInterval);
+                    }
                     gameOver = true;
                     showGameOverMessage("你被災難吞噬了！", false);
                 }
@@ -185,6 +192,11 @@ function startNextDisaster() {
         return; // 所有災難都結束了
     }
     
+    // 清除之前的計時器
+    if (disasterInterval) {
+        clearInterval(disasterInterval);
+    }
+    
     // 啟動災難計時器
     disasterInterval = setInterval(() => {
         disasterTimer--;
@@ -206,6 +218,13 @@ function startNextDisaster() {
                 break;
             case 3: // 死亡
                 if (disasterTimer === 0) {
+                    // 停止所有計時器
+                    if (disasterInterval) {
+                        clearInterval(disasterInterval);
+                    }
+                    if (rockFallInterval) {
+                        clearInterval(rockFallInterval);
+                    }
                     gameOver = true;
                     showGameOverMessage("你被災難吞噬了！", false);
                 }
@@ -295,11 +314,18 @@ function activateEarthquake() {
             playerHealth -= 1;
             updateHealthBar();
             
-            if (playerHealth <= 0) {
-                clearInterval(earthquakeDamage);
-                gameOver = true;
-                showGameOverMessage("你被地震震死了！", false);
-            }
+                            if (playerHealth <= 0) {
+                    clearInterval(earthquakeDamage);
+                    // 停止所有計時器
+                    if (disasterInterval) {
+                        clearInterval(disasterInterval);
+                    }
+                    if (rockFallInterval) {
+                        clearInterval(rockFallInterval);
+                    }
+                    gameOver = true;
+                    showGameOverMessage("你被地震震死了！", false);
+                }
         } else {
             clearInterval(earthquakeDamage);
         }
@@ -425,7 +451,13 @@ function animate() {
     if (!gameOver) {
         const exitReached = controls.handleInput();
         if (exitReached) {
-            clearInterval(disasterInterval);
+            // 停止所有計時器
+            if (disasterInterval) {
+                clearInterval(disasterInterval);
+            }
+            if (rockFallInterval) {
+                clearInterval(rockFallInterval);
+            }
             gameOver = true;
             showGameOverMessage("恭喜你離開\n洞穴!!", true);
         }
@@ -500,10 +532,17 @@ function animate() {
                         }
                     }
                     
-                    if (playerHealth <= 0) {
-                        gameOver = true;
-                        showGameOverMessage("你被落石砸死了！", false);
+                                    if (playerHealth <= 0) {
+                    // 停止所有計時器
+                    if (disasterInterval) {
+                        clearInterval(disasterInterval);
                     }
+                    if (rockFallInterval) {
+                        clearInterval(rockFallInterval);
+                    }
+                    gameOver = true;
+                    showGameOverMessage("你被落石砸死了！", false);
+                }
                 }
                 
                 // 檢查落石是否落地
@@ -581,7 +620,13 @@ function damagePlayer() {
     playerHealth -= 10;
     updateHealthBar();
     if (playerHealth <= 0) {
-        clearInterval(disasterInterval);
+        // 停止所有計時器
+        if (disasterInterval) {
+            clearInterval(disasterInterval);
+        }
+        if (rockFallInterval) {
+            clearInterval(rockFallInterval);
+        }
         gameOver = true;
         showGameOverMessage("你被洞穴的影子吞沒了!!", false);
     }
