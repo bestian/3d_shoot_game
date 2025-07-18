@@ -95,10 +95,12 @@ window.selectDifficulty = function(difficulty) {
     initGame(difficulty);
 };
 
+window.showHallOfFame = showHallOfFame;
+
 // 在文件頂部附近添加這些新的變量
 const playerRadius = 0.3;
 
-// 修改創建子彈���數
+// 修改創建子彈數
 function createBullet(camera) {
     const bulletGeometry = new THREE.SphereGeometry(0.1, 32, 32);
     const bulletMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -144,6 +146,174 @@ function createExplosion(position) {
 let bullets = [];
 let monsters = [];
 let gameOver = false;
+let monstersKilled = 0; // 追蹤打敗的影子數量
+
+// Hall of Fame 功能
+function getHallOfFame(difficulty = null) {
+    if (difficulty) {
+        const stored = localStorage.getItem(`hall_of_fame_${difficulty}`);
+        return stored ? JSON.parse(stored) : [];
+    } else {
+        // 獲取所有難度的記錄
+        const allRecords = [];
+        ['easy', 'hard', 'inferno'].forEach(diff => {
+            const records = getHallOfFame(diff);
+            allRecords.push(...records);
+        });
+        return allRecords.sort((a, b) => {
+            if (b.monstersKilled !== a.monstersKilled) {
+                return b.monstersKilled - a.monstersKilled;
+            }
+            return b.finalHealth - a.finalHealth;
+        });
+    }
+}
+
+function saveToHallOfFame(playerName, monstersKilled, finalHealth, difficulty) {
+    const hallOfFame = getHallOfFame(difficulty);
+    const newRecord = {
+        date: new Date().toLocaleDateString('zh-TW'),
+        name: playerName,
+        monstersKilled: monstersKilled,
+        finalHealth: finalHealth,
+        difficulty: difficulty,
+        timestamp: Date.now()
+    };
+    
+    hallOfFame.push(newRecord);
+    // 按擊敗影子數量排序，然後按血量排序
+    hallOfFame.sort((a, b) => {
+        if (b.monstersKilled !== a.monstersKilled) {
+            return b.monstersKilled - a.monstersKilled;
+        }
+        return b.finalHealth - a.finalHealth;
+    });
+    
+    // 只保留前10名
+    const top10 = hallOfFame.slice(0, 10);
+    localStorage.setItem(`hall_of_fame_${difficulty}`, JSON.stringify(top10));
+    return top10;
+}
+
+function isTopScore(monstersKilled, difficulty) {
+    const hallOfFame = getHallOfFame(difficulty);
+    if (hallOfFame.length < 10) return true;
+    return monstersKilled > hallOfFame[hallOfFame.length - 1].monstersKilled;
+}
+
+function showHallOfFame(selectedTab = 'all') {
+    // 確保初始標籤是'all'
+    selectedTab = selectedTab || 'all';
+    const modalElement = document.createElement('div');
+    modalElement.style.position = 'fixed';
+    modalElement.style.top = '0';
+    modalElement.style.left = '0';
+    modalElement.style.width = '100%';
+    modalElement.style.height = '100%';
+    modalElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    modalElement.style.display = 'flex';
+    modalElement.style.justifyContent = 'center';
+    modalElement.style.alignItems = 'center';
+    modalElement.style.zIndex = '2100';
+    
+    const contentElement = document.createElement('div');
+    contentElement.style.backgroundColor = 'rgba(50, 50, 50, 0.95)';
+    contentElement.style.color = 'white';
+    contentElement.style.padding = '30px';
+    contentElement.style.borderRadius = '15px';
+    contentElement.style.maxWidth = '700px';
+    contentElement.style.maxHeight = '80%';
+    contentElement.style.overflow = 'auto';
+    contentElement.style.textAlign = 'center';
+    
+    function updateContent(tab) {
+        let content = '<h2>🏆 名人堂 🏆</h2>';
+        
+        // 添加標籤按鈕
+        content += '<div style="margin: 20px 0;">';
+        const tabs = [
+            { key: 'all', label: '總排行', emoji: '🌟' },
+            { key: 'easy', label: '簡易模式', emoji: '🟢' },
+            { key: 'hard', label: '困難模式', emoji: '🟡' },
+            { key: 'inferno', label: '煉獄模式', emoji: '🔴' }
+        ];
+        
+        tabs.forEach(tabInfo => {
+            const isActive = tab === tabInfo.key;
+            const buttonStyle = isActive 
+                ? 'background-color: #4CAF50; color: white;' 
+                : 'background-color: #666; color: #ccc;';
+            content += `<button onclick="updateHallOfFameTab('${tabInfo.key}')" style="margin: 0 5px; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; ${buttonStyle}">${tabInfo.emoji} ${tabInfo.label}</button>`;
+        });
+        content += '</div>';
+        
+        // 獲取對應的排行榜數據
+        const hallOfFame = tab === 'all' ? getHallOfFame() : getHallOfFame(tab);
+        
+        if (hallOfFame.length === 0) {
+            content += '<p>還沒有任何記錄，成為第一個英雄吧！</p>';
+        } else {
+            content += '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">';
+            content += '<tr style="background-color: rgba(255, 255, 255, 0.1);"><th style="padding: 10px; border: 1px solid #666;">排名</th><th style="padding: 10px; border: 1px solid #666;">日期</th><th style="padding: 10px; border: 1px solid #666;">名字</th><th style="padding: 10px; border: 1px solid #666;">擊敗影子</th><th style="padding: 10px; border: 1px solid #666;">剩餘血量</th>';
+            
+            // 只在總排行時顯示難度欄
+            if (tab === 'all') {
+                content += '<th style="padding: 10px; border: 1px solid #666;">難度</th>';
+            }
+            content += '</tr>';
+            
+            hallOfFame.slice(0, 10).forEach((record, index) => {
+                const rowStyle = index < 3 ? 'background-color: rgba(255, 215, 0, 0.2);' : '';
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                const difficultyEmoji = record.difficulty === 'easy' ? '🟢' : record.difficulty === 'hard' ? '🟡' : '🔴';
+                
+                content += `<tr style="${rowStyle}">
+                    <td style="padding: 8px; border: 1px solid #666;">${medal} ${index + 1}</td>
+                    <td style="padding: 8px; border: 1px solid #666;">${record.date}</td>
+                    <td style="padding: 8px; border: 1px solid #666;">${record.name}</td>
+                    <td style="padding: 8px; border: 1px solid #666;">${record.monstersKilled}</td>
+                    <td style="padding: 8px; border: 1px solid #666;">${record.finalHealth}%</td>`;
+                
+                if (tab === 'all') {
+                    content += `<td style="padding: 8px; border: 1px solid #666;">${difficultyEmoji} ${record.difficulty}</td>`;
+                }
+                content += '</tr>';
+            });
+            content += '</table>';
+        }
+        
+        content += '<button id="closeHallOfFame" style="padding: 10px 20px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px;">關閉</button>';
+        
+        contentElement.innerHTML = content;
+    }
+    
+    // 全域函數供按鈕調用
+    window.updateHallOfFameTab = function(tab) {
+        updateContent(tab);
+        // 重新綁定關閉按鈕事件
+        document.getElementById('closeHallOfFame').addEventListener('click', () => {
+            document.body.removeChild(modalElement);
+            delete window.updateHallOfFameTab; // 清理全域函數
+        });
+    };
+    
+    updateContent(selectedTab);
+    modalElement.appendChild(contentElement);
+    document.body.appendChild(modalElement);
+    
+    document.getElementById('closeHallOfFame').addEventListener('click', () => {
+        document.body.removeChild(modalElement);
+        delete window.updateHallOfFameTab; // 清理全域函數
+    });
+    
+    // 點擊背景關閉
+    modalElement.addEventListener('click', (e) => {
+        if (e.target === modalElement) {
+            document.body.removeChild(modalElement);
+            delete window.updateHallOfFameTab; // 清理全域函數
+        }
+    });
+}
 
 // 災難系統相關變數
 let darknessEffectActive = false;
@@ -547,6 +717,7 @@ function animate() {
                     monsters.splice(j, 1);
                     scene.remove(bullet);
                     bullets.splice(i, 1);
+                    monstersKilled++; // 增加擊敗計數
                     break;
                 }
             }
@@ -629,6 +800,7 @@ function animate() {
                 createExplosion(monster.position);
                 scene.remove(monster);
                 monsters.splice(index, 1);
+                monstersKilled++; // 增加擊敗計數
             }
         });
         
@@ -693,7 +865,6 @@ function damagePlayer() {
 }
 
 function showGameOverMessage(message, isVictory) {
-    // 移除 controls.stopAutoShooting();
     const messageElement = document.createElement('div');
     messageElement.style.position = 'absolute';
     messageElement.style.top = '50%';
@@ -704,18 +875,59 @@ function showGameOverMessage(message, isVictory) {
     messageElement.style.padding = '20px';
     messageElement.style.borderRadius = '10px';
     messageElement.style.textAlign = 'center';
-    messageElement.innerHTML = `
+    messageElement.style.minWidth = '300px';
+    
+    let content = `
         <h2>${message}</h2>
-        <button id="restartButton">再玩一局</button>
+        <p>擊敗影子數量: ${monstersKilled}</p>
     `;
+    
+    // 檢查是否進入Top 10
+    if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
+        content += `
+            <p style="color: gold;">🏆 恭喜進入名人堂！</p>
+            <input type="text" id="playerName" placeholder="輸入你的名字" maxlength="20" style="padding: 5px; margin: 10px; border-radius: 5px; border: none;">
+            <br>
+            <button id="saveScore">保存分數</button>
+        `;
+    }
+    
+    content += `
+        <button id="restartButton">再玩一局</button>
+        <button id="viewHallOfFame">查看名人堂</button>
+    `;
+    
+    messageElement.innerHTML = content;
     document.body.appendChild(messageElement);
 
+    // 添加事件監聽器
     document.getElementById('restartButton').addEventListener('click', restartGame);
+    document.getElementById('viewHallOfFame').addEventListener('click', showHallOfFame);
+    
+    if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
+        document.getElementById('saveScore').addEventListener('click', () => {
+            const playerName = document.getElementById('playerName').value.trim();
+            if (playerName) {
+                saveToHallOfFame(playerName, monstersKilled, playerHealth, selectedDifficulty);
+                alert('分數已保存到名人堂！');
+                document.getElementById('saveScore').style.display = 'none';
+                document.getElementById('playerName').style.display = 'none';
+            } else {
+                alert('請輸入名字！');
+            }
+        });
+        
+        // 讓輸入框獲得焦點
+        setTimeout(() => {
+            document.getElementById('playerName').focus();
+        }, 100);
+    }
 }
 
 function restartGame() {
     gameOver = false;
     playerHealth = 100;
+    monstersKilled = 0; // 重置擊敗計數
     updateHealthBar();
     
     // 重置計時器
