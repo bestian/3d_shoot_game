@@ -19,8 +19,8 @@ export class GameMap {
     setMapSize() {
         switch (this.difficulty) {
             case 'easy':
-                this.mapSize = 40;
-                this.gridSize = 10; // 10x10 網格
+                this.mapSize = 30;
+                this.gridSize = 8; // 8x8 網格
                 break;
             case 'hard':
                 this.mapSize = 60;
@@ -31,8 +31,8 @@ export class GameMap {
                 this.gridSize = 20; // 20x20 網格
                 break;
             default:
-                this.mapSize = 40;
-                this.gridSize = 10;
+                this.mapSize = 30;
+                this.gridSize = 8;
         }
         this.cellSize = this.mapSize / this.gridSize;
     }
