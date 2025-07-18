@@ -521,9 +521,15 @@ function animate() {
             earthquakeShake.x = (Math.random() - 0.5) * 0.1;
             earthquakeShake.z = (Math.random() - 0.5) * 0.1;
             
-            // 只應用X和Z軸搖晃，不影響Y軸（高度）
-            camera.position.x += earthquakeShake.x;
-            camera.position.z += earthquakeShake.z;
+            // 檢查搖晃後的位置是否會與牆壁碰撞
+            const newPosition = camera.position.clone();
+            newPosition.x += earthquakeShake.x;
+            newPosition.z += earthquakeShake.z;
+            
+            // 只有在新位置不會碰撞時才應用搖晃
+            if (!gameMap.checkWallCollision(newPosition, playerRadius)) {
+                camera.position.copy(newPosition);
+            }
         }
         
         // 更新子彈位置
