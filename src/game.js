@@ -64,12 +64,14 @@ function initGame(difficulty) {
     const crosshair = document.getElementById('crosshair');
     const joystick = document.getElementById('joystick-move');
     const shootButton = document.getElementById('shoot-button');
+    const jumpButton = document.getElementById('jump-button');
     
     if (healthBar) healthBar.style.display = 'block';
     if (disasterContainer) disasterContainer.style.display = 'block';
     if (crosshair) crosshair.style.display = 'block';
     if (joystick) joystick.style.display = 'block';
     if (shootButton) shootButton.style.display = 'block';
+    if (jumpButton) jumpButton.style.display = 'block';
     
     // 初始化控制系統
     controls = initControls(
@@ -980,6 +982,7 @@ function restartGame() {
     const crosshair = document.getElementById('crosshair');
     const joystick = document.getElementById('joystick-move');
     const shootButton = document.getElementById('shoot-button');
+    const jumpButton = document.getElementById('jump-button');
     const difficultySelector = document.getElementById('difficulty-selector');
     
     if (healthBar) healthBar.style.display = 'none';
@@ -987,6 +990,7 @@ function restartGame() {
     if (crosshair) crosshair.style.display = 'none';
     if (joystick) joystick.style.display = 'none';
     if (shootButton) shootButton.style.display = 'none';
+    if (jumpButton) jumpButton.style.display = 'none';
     
     // 顯示難度選擇器
     if (difficultySelector) difficultySelector.style.display = 'block';

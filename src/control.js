@@ -8,6 +8,38 @@ const keyboardRotateSpeed = 0.03;
 
 const keys = {};
 
+// 跳躍相關變數
+let isJumping = false;
+let jumpVelocity = 0;
+let originalCameraHeight = 1.7; // 預設相機高度
+const jumpHeight = 10; // 跳躍高度
+const jumpSpeed = 0.25; // 跳躍速度
+const gravity = 0.008; // 重力
+
+// 開始跳躍
+function startJump(camera) {
+    if (!isJumping) {
+        isJumping = true;
+        jumpVelocity = jumpSpeed;
+        originalCameraHeight = camera.position.y;
+    }
+}
+
+// 更新跳躍狀態
+function updateJump(camera) {
+    if (isJumping) {
+        camera.position.y += jumpVelocity;
+        jumpVelocity -= gravity;
+        
+        // 檢查是否落地
+        if (camera.position.y <= originalCameraHeight) {
+            camera.position.y = originalCameraHeight;
+            isJumping = false;
+            jumpVelocity = 0;
+        }
+    }
+}
+
 export function initControls(
     scene,
     camera,
@@ -25,6 +57,12 @@ export function initControls(
             scene.add(bullet);
             onBulletCreated(bullet);
         }
+        // 跳躍控制 (Ctrl鍵)
+        if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
+            if (!isJumping && !getGameOver()) {
+                startJump(camera);
+            }
+        }
     });
     document.addEventListener('keyup', (event) => keys[event.code] = false);
 
@@ -37,6 +75,14 @@ export function initControls(
             const bullet = createBullet(camera);
             scene.add(bullet);
             onBulletCreated(bullet);
+        }
+    });
+
+    // 添加跳躍按鈕事件監聽器
+    const jumpButton = document.getElementById('jump-button');
+    jumpButton.addEventListener('click', () => {
+        if (!getGameOver()) {
+            startJump(camera);
         }
     });
 
@@ -122,6 +168,9 @@ function resetJoystick(knob, type) {
 function handleInput(camera, getGameOver, checkWallCollision, playerRadius, gameMap) {
     if (getGameOver()) return false;
 
+    // 更新跳躍狀態
+    updateJump(camera);
+
     const rotateSpeed = 0.15;
     const moveSpeed = keyboardMoveSpeed;
 
@@ -189,7 +238,10 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
     }
 
     if (moved) {
+        // 保持跳躍時的Y軸位置
+        const currentY = camera.position.y;
         camera.position.copy(newPosition);
+        camera.position.y = currentY;
     }
 
     if (gameMap && gameMap.checkExitReached && gameMap.mapSize) {

@@ -107,6 +107,26 @@
             outline: none;
             cursor: pointer;
         }
+        /* 跳躍按鈕樣式 */
+        #jump-button {
+            position: fixed;
+            bottom: 110px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background-color: rgba(0, 150, 255, 0.6);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: white;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        }
         #health-bar-container {
             position: fixed;
             top: 10px;
@@ -273,5 +293,7 @@
     <div id="darkness-overlay"></div>
     <!-- 射擊按鈕 -->
     <button id="shoot-button" style="display: none;">射擊</button>
+    <!-- 跳躍按鈕 -->
+    <button id="jump-button" style="display: none;">⬆️</button>
 </body>
 </html>
