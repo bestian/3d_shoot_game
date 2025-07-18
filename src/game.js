@@ -243,7 +243,7 @@ function showHallOfFame(selectedTab = 'all') {
             const buttonStyle = isActive 
                 ? 'background-color: #4CAF50; color: white;' 
                 : 'background-color: #666; color: #ccc;';
-            content += `<button onclick="updateHallOfFameTab('${tabInfo.key}')" style="margin: 0 5px; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; ${buttonStyle}">${tabInfo.emoji} ${tabInfo.label}</button>`;
+            content += `<button onclick="updateHallOfFameTab('${tabInfo.key}')" style="margin: 0 5px; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); ${buttonStyle}">${tabInfo.emoji} ${tabInfo.label}</button>`;
         });
         content += '</div>';
         
@@ -282,7 +282,7 @@ function showHallOfFame(selectedTab = 'all') {
             content += '</table>';
         }
         
-        content += '<button id="closeHallOfFame" style="padding: 10px 20px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px;">關閉</button>';
+        content += '<button id="closeHallOfFame" style="padding: 10px 20px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); margin-top: 20px;">關閉</button>';
         
         contentElement.innerHTML = content;
     }
@@ -804,8 +804,17 @@ function animate() {
             }
         });
         
+        // 根據難度調整影子生成頻率和最大數量
+        const difficultySettings = {
+            'easy': { spawnRate: 0.04, maxMonsters: 8 },    // 2倍頻率
+            'hard': { spawnRate: 0.06, maxMonsters: 12 },   // 3倍頻率
+            'inferno': { spawnRate: 0.08, maxMonsters: 16 } // 4倍頻率
+        };
+        
+        const settings = difficultySettings[selectedDifficulty] || difficultySettings['easy'];
+        
         // 隨機生成新的怪物
-        if (Math.random() < 0.02 && monsters.length < 5 && gameMap) {
+        if (Math.random() < settings.spawnRate && monsters.length < settings.maxMonsters && gameMap) {
             const monster = createShadowMonster(scene, monster_path, gameMap);
             if (monster) {
                 monsters.push(monster);
@@ -888,13 +897,13 @@ function showGameOverMessage(message, isVictory) {
             <p style="color: gold;">🏆 恭喜進入名人堂！</p>
             <input type="text" id="playerName" placeholder="輸入你的名字" maxlength="20" style="padding: 5px; margin: 10px; border-radius: 5px; border: none;">
             <br>
-            <button id="saveScore">保存分數</button>
+            <button id="saveScore" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #FF9800; color: white;">保存分數</button>
         `;
     }
     
     content += `
-        <button id="restartButton">再玩一局</button>
-        <button id="viewHallOfFame">查看名人堂</button>
+        <button id="restartButton" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #4CAF50; color: white;">再玩一局</button>
+        <button id="viewHallOfFame" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #9C27B0; color: white;">查看名人堂</button>
     `;
     
     messageElement.innerHTML = content;
@@ -902,7 +911,7 @@ function showGameOverMessage(message, isVictory) {
 
     // 添加事件監聽器
     document.getElementById('restartButton').addEventListener('click', restartGame);
-    document.getElementById('viewHallOfFame').addEventListener('click', showHallOfFame);
+    document.getElementById('viewHallOfFame').addEventListener('click', () => showHallOfFame('all'));
     
     if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
         document.getElementById('saveScore').addEventListener('click', () => {
