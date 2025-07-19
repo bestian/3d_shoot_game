@@ -50,21 +50,91 @@ export function initControls(
     gameMap,
     onBulletCreated
 ) {
-    document.addEventListener('keydown', (event) => {
-        keys[event.code] = true;
-        if (event.code === 'Space' && !getGameOver()) {
-            const bullet = createBullet(camera);
-            scene.add(bullet);
-            onBulletCreated(bullet);
-        }
-        // 跳躍控制 (Ctrl鍵)
-        if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
-            if (!isJumping && !getGameOver()) {
-                startJump(camera);
+    // 添加多種事件監聽器來支援不同設備
+    const keyEvents = ['keydown', 'keyup', 'keypress'];
+    
+    keyEvents.forEach(eventType => {
+        document.addEventListener(eventType, (event) => {
+            
+            if (eventType === 'keydown') {
+                keys[event.code] = true;
+                keys[event.key] = true; // 添加 key 屬性支援
+                
+                // 射擊控制 (空白鍵)
+                if (event.code === 'Space' || event.key === ' ' || event.keyCode === 32) {
+                    event.preventDefault(); // 防止頁面滾動
+                    if (!getGameOver()) {
+                        const bullet = createBullet(camera);
+                        scene.add(bullet);
+                        onBulletCreated(bullet);
+                    }
+                }
+                
+                // 跳躍控制 (Ctrl鍵)
+                if (event.code === 'ControlLeft' || event.code === 'ControlRight' || 
+                    event.key === 'Control' || event.keyCode === 17) {
+                    event.preventDefault();
+                    if (!isJumping && !getGameOver()) {
+                        startJump(camera);
+                    }
+                }
+            } else if (eventType === 'keyup') {
+                keys[event.code] = false;
+                keys[event.key] = false; // 添加 key 屬性支援
             }
-        }
+        }, { passive: false }); // 允許 preventDefault
     });
-    document.addEventListener('keyup', (event) => keys[event.code] = false);
+
+    // 添加 iPad 特定的觸摸鍵盤事件
+    document.addEventListener('touchstart', (event) => {
+        // 防止觸摸事件干擾鍵盤
+        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+            return;
+        }
+    }, { passive: true });
+
+    // 添加 focus 事件來確保鍵盤事件能被捕獲
+    document.addEventListener('focus', () => {
+        // 文檔獲得焦點，鍵盤事件應該正常工作
+    });
+
+    // 添加 click 事件來確保文檔有焦點
+    document.addEventListener('click', () => {
+        // 使用 body 元素來設定焦點
+        document.body.focus();
+    });
+
+    // iPad 特定修復：防止虛擬鍵盤干擾
+    document.addEventListener('blur', () => {
+        // 當失去焦點時，清除所有按鍵狀態
+        Object.keys(keys).forEach(key => {
+            keys[key] = false;
+        });
+    });
+
+    // 確保遊戲區域可以獲得焦點
+    const gameContainer = document.body;
+    gameContainer.setAttribute('tabindex', '0');
+    gameContainer.style.outline = 'none'; // 移除焦點邊框
+    
+    // 添加 iPad 外接鍵盤的特定處理
+    if (navigator.userAgent.includes('iPad') || navigator.userAgent.includes('Macintosh')) {
+        // 在 iPad 上，確保文檔始終有焦點
+        setTimeout(() => {
+            document.body.focus();
+        }, 100);
+        
+        // 添加更多事件監聽器來捕獲 iPad 鍵盤事件
+        window.addEventListener('keydown', (event) => {
+            keys[event.code] = true;
+            keys[event.key] = true;
+        });
+        
+        window.addEventListener('keyup', (event) => {
+            keys[event.code] = false;
+            keys[event.key] = false;
+        });
+    }
 
     initTouchControls(scene, camera, createBullet, getGameOver);
 
@@ -203,10 +273,11 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
         }
     }
 
-    const moveForward = keys['KeyW'] || keys['ArrowUp'];
-    const moveBackward = keys['KeyS'] || keys['ArrowDown'];
-    const moveLeft = keys['KeyA'];
-    const moveRight = keys['KeyD'];
+    // 支援多種按鍵代碼格式
+    const moveForward = keys['KeyW'] || keys['ArrowUp'] || keys['w'] || keys['W'] || keys['Up'];
+    const moveBackward = keys['KeyS'] || keys['ArrowDown'] || keys['s'] || keys['S'] || keys['Down'];
+    const moveLeft = keys['KeyA'] || keys['a'] || keys['A'] || keys['Left'];
+    const moveRight = keys['KeyD'] || keys['d'] || keys['D'] || keys['Right'];
 
     if (moveForward || moveBackward || moveLeft || moveRight) {
         const moveX = ((moveLeft ? -1 : 0) + (moveRight ? 1 : 0)) * moveSpeed;
@@ -230,10 +301,11 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
         }
     }
 
-    if (keys['ArrowLeft']) {
+    // 支援多種旋轉按鍵代碼
+    if (keys['ArrowLeft'] || keys['Left']) {
         camera.rotation.y += keyboardRotateSpeed;
     }
-    if (keys['ArrowRight']) {
+    if (keys['ArrowRight'] || keys['Right']) {
         camera.rotation.y -= keyboardRotateSpeed;
     }
 
