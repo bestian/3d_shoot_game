@@ -45,20 +45,40 @@ export function updateShadowMonsters(monsters, playerPosition) {
 
 // 獲取隨機起始位置的函數
 function getRandomStartPosition(gameMap = null) {
-    let mapSize = 40; // 預設大小
-    
-    // 如果有gameMap，使用其大小
-    if (gameMap && gameMap.mapSize) {
-        mapSize = gameMap.mapSize;
+    // 如果有gameMap，使用其getRandomPosition方法來確保位置有效
+    if (gameMap && gameMap.getRandomPosition) {
+        return gameMap.getRandomPosition();
     }
     
+    // 備用方案：如果沒有gameMap，使用簡單的邊緣生成邏輯
+    let mapSize = 40; // 預設大小
     const halfSize = mapSize / 2;
+    const margin = 2; // 距離邊緣的最小距離
     
-    // 在場景邊緣隨機生成怪物
-    const edge = Math.random() < 0.5 ? -1 : 1;
-    const x = edge * (Math.random() * (halfSize * 0.3) + (halfSize * 0.7)); // 在邊緣區域生成
-    const z = edge * (Math.random() * (halfSize * 0.3) + (halfSize * 0.7));
-    return new THREE.Vector3(x, 1, z); // 假設怪物的 y 位置為 1
+    // 隨機選擇生成邊緣：0=北邊, 1=南邊, 2=東邊, 3=西邊
+    const edgeType = Math.floor(Math.random() * 4);
+    let x, z;
+    
+    switch (edgeType) {
+        case 0: // 北邊 (z = -halfSize)
+            x = Math.random() * (mapSize - 2 * margin) - (halfSize - margin);
+            z = -halfSize + margin;
+            break;
+        case 1: // 南邊 (z = halfSize)
+            x = Math.random() * (mapSize - 2 * margin) - (halfSize - margin);
+            z = halfSize - margin;
+            break;
+        case 2: // 東邊 (x = halfSize)
+            x = halfSize - margin;
+            z = Math.random() * (mapSize - 2 * margin) - (halfSize - margin);
+            break;
+        case 3: // 西邊 (x = -halfSize)
+            x = -halfSize + margin;
+            z = Math.random() * (mapSize - 2 * margin) - (halfSize - margin);
+            break;
+    }
+    
+    return new THREE.Vector3(x, 1, z);
 }
 
 // 在您的主要Three.js代碼中調用此函數

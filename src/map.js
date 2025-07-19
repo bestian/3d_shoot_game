@@ -30,6 +30,10 @@ export class GameMap {
                 this.mapSize = 80;
                 this.gridSize = 20; // 20x20 網格
                 break;
+            case 'practice':
+                this.mapSize = 30;
+                this.gridSize = 8; // 8x8 網格，和簡易模式相同
+                break;
             default:
                 this.mapSize = 30;
                 this.gridSize = 8;
@@ -119,6 +123,11 @@ export class GameMap {
         this.createWall(0, 1, -halfSize, this.mapSize, 2, 1);
         this.createWall(0, 1, halfSize, this.mapSize, 2, 1);
 
+        // 練習模式不創建內部牆壁
+        if (this.difficulty === 'practice') {
+            return;
+        }
+
         // 根據迷宮網格創建內部牆壁
         for (let row = 0; row < this.gridSize; row++) {
             for (let col = 0; col < this.gridSize; col++) {
@@ -175,6 +184,8 @@ export class GameMap {
                 return 15;
             case 'inferno':
                 return 30;
+            case 'practice':
+                return 0; // 練習模式不添加額外牆壁
             default:
                 return 5;
         }
@@ -234,6 +245,11 @@ export class GameMap {
         walls.push({x: halfSize, z: 0, width: 1, depth: this.mapSize});
         walls.push({x: 0, z: -halfSize, width: this.mapSize, depth: 1});
         walls.push({x: 0, z: halfSize, width: this.mapSize, depth: 1});
+
+        // 練習模式不包含迷宮內牆
+        if (this.difficulty === 'practice') {
+            return walls;
+        }
 
         // 迷宮牆壁
         for (let row = 0; row < this.gridSize; row++) {
@@ -322,6 +338,9 @@ export class GameMap {
                     break;
                 case 'inferno':
                     minLightDistance = 20;
+                    break;
+                case 'practice':
+                    minLightDistance = 10; // 和簡易模式相同
                     break;
                 default:
                     minLightDistance = 10;
@@ -416,6 +435,9 @@ export class GameMap {
                 break;
             case 'inferno':
                 minDistance = 30;
+                break;
+            case 'practice':
+                minDistance = 15; // 和簡易模式相同
                 break;
             default:
                 minDistance = 15;

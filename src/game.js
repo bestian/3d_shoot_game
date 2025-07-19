@@ -810,7 +810,8 @@ function animate() {
         const difficultySettings = {
             'easy': { spawnRate: 0.04, maxMonsters: 8 },    // 2倍頻率
             'hard': { spawnRate: 0.06, maxMonsters: 12 },   // 3倍頻率
-            'inferno': { spawnRate: 0.08, maxMonsters: 16 } // 4倍頻率
+            'inferno': { spawnRate: 0.08, maxMonsters: 16 }, // 4倍頻率
+            'practice': { spawnRate: 0.04, maxMonsters: 8 }  // 和簡易模式相同
         };
         
         const settings = difficultySettings[selectedDifficulty] || difficultySettings['easy'];
@@ -893,19 +894,25 @@ function showGameOverMessage(message, isVictory) {
         <p>擊敗影子數量: ${monstersKilled}</p>
     `;
     
-    // 檢查是否進入Top 10
-    if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
+    // 練習模式不顯示排行榜相關內容
+    if (selectedDifficulty !== 'practice') {
+        // 檢查是否進入Top 10
+        if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
+            content += `
+                <p style="color: gold;">🏆 恭喜進入名人堂！</p>
+                <input type="text" id="playerName" placeholder="輸入你的名字" maxlength="20" style="padding: 5px; margin: 10px; border-radius: 5px; border: none;">
+                <br>
+                <button id="saveScore" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #FF9800; color: white;">保存分數</button>
+            `;
+        }
+        
         content += `
-            <p style="color: gold;">🏆 恭喜進入名人堂！</p>
-            <input type="text" id="playerName" placeholder="輸入你的名字" maxlength="20" style="padding: 5px; margin: 10px; border-radius: 5px; border: none;">
-            <br>
-            <button id="saveScore" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #FF9800; color: white;">保存分數</button>
+            <button id="viewHallOfFame" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #9C27B0; color: white;">查看名人堂</button>
         `;
     }
     
     content += `
         <button id="restartButton" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #4CAF50; color: white;">再玩一局</button>
-        <button id="viewHallOfFame" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #9C27B0; color: white;">查看名人堂</button>
     `;
     
     messageElement.innerHTML = content;
@@ -913,25 +920,29 @@ function showGameOverMessage(message, isVictory) {
 
     // 添加事件監聽器
     document.getElementById('restartButton').addEventListener('click', restartGame);
-    document.getElementById('viewHallOfFame').addEventListener('click', () => showHallOfFame('all'));
     
-    if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
-        document.getElementById('saveScore').addEventListener('click', () => {
-            const playerName = document.getElementById('playerName').value.trim();
-            if (playerName) {
-                saveToHallOfFame(playerName, monstersKilled, playerHealth, selectedDifficulty);
-                alert('分數已保存到名人堂！');
-                document.getElementById('saveScore').style.display = 'none';
-                document.getElementById('playerName').style.display = 'none';
-            } else {
-                alert('請輸入名字！');
-            }
-        });
+    // 練習模式不添加排行榜相關事件監聽器
+    if (selectedDifficulty !== 'practice') {
+        document.getElementById('viewHallOfFame').addEventListener('click', () => showHallOfFame('all'));
         
-        // 讓輸入框獲得焦點
-        setTimeout(() => {
-            document.getElementById('playerName').focus();
-        }, 100);
+        if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
+            document.getElementById('saveScore').addEventListener('click', () => {
+                const playerName = document.getElementById('playerName').value.trim();
+                if (playerName) {
+                    saveToHallOfFame(playerName, monstersKilled, playerHealth, selectedDifficulty);
+                    alert('分數已保存到名人堂！');
+                    document.getElementById('saveScore').style.display = 'none';
+                    document.getElementById('playerName').style.display = 'none';
+                } else {
+                    alert('請輸入名字！');
+                }
+            });
+            
+            // 讓輸入框獲得焦點
+            setTimeout(() => {
+                document.getElementById('playerName').focus();
+            }, 100);
+        }
     }
 }
 
