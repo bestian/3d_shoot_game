@@ -151,17 +151,49 @@ let gameOver = false;
 let monstersKilled = 0; // 追蹤打敗的影子數量
 
 // Hall of Fame 功能
-function getHallOfFame(difficulty = null) {
+async function getHallOfFame(difficulty = null) {
     if (difficulty) {
-        const stored = localStorage.getItem(`hall_of_fame_${difficulty}`);
-        return stored ? JSON.parse(stored) : [];
+        try {
+            let id = 1;
+            if (difficulty === 'easy') {
+                id = 1;
+            } else if (difficulty === 'hard') {
+                id = 2;
+            } else if (difficulty === 'inferno') {
+                id = 3;
+            }
+            
+            const response = await fetch(`https://bknd-game.bestian123.workers.dev/api/data/entity/hall_of_fame/${id}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('從後端獲取資料:', data);
+            console.log(data.data.record);
+            console.log(data.data.record.data);
+            return data.data.record.data || [];
+        } catch (error) {
+            console.error('從後端獲取資料時發生錯誤:', error);
+            // 如果後端失敗，回退到本地儲存
+            const stored = localStorage.getItem(`hall_of_fame_${difficulty}`);
+            return stored ? JSON.parse(stored) : [];
+        }
     } else {
         // 獲取所有難度的記錄
         const allRecords = [];
-        ['easy', 'hard', 'inferno'].forEach(diff => {
-            const records = getHallOfFame(diff);
+        const difficulties = ['easy', 'hard', 'inferno'];
+        
+        // 使用 Promise.all 來並行處理所有請求
+        const promises = difficulties.map(async diff => {
+            const records = await getHallOfFame(diff);
+            return records;
+        });
+        
+        const results = await Promise.all(promises);
+        results.forEach(records => {
             allRecords.push(...records);
         });
+        
         return allRecords.sort((a, b) => {
             if (b.monstersKilled !== a.monstersKilled) {
                 return b.monstersKilled - a.monstersKilled;
@@ -171,8 +203,8 @@ function getHallOfFame(difficulty = null) {
     }
 }
 
-function saveToHallOfFame(playerName, monstersKilled, finalHealth, difficulty) {
-    const hallOfFame = getHallOfFame(difficulty);
+async function saveToHallOfFame(playerName, monstersKilled, finalHealth, difficulty) {
+    const hallOfFame = await getHallOfFame(difficulty);
     const newRecord = {
         date: new Date().toLocaleDateString('zh-TW'),
         name: playerName,
@@ -190,20 +222,58 @@ function saveToHallOfFame(playerName, monstersKilled, finalHealth, difficulty) {
         }
         return b.finalHealth - a.finalHealth;
     });
+
+    console.log('準備保存的資料:', hallOfFame);
     
     // 只保留前10名
     const top10 = hallOfFame.slice(0, 10);
     localStorage.setItem(`hall_of_fame_${difficulty}`, JSON.stringify(top10));
+
+    let id = 1;
+    if (difficulty === 'easy') {
+        id = 1;
+    } else if (difficulty === 'hard') {
+        id = 2;
+    } else if (difficulty === 'inferno') {
+        id = 3;
+    }
+    
+    // 對後端傳送資料
+    try {
+        const response = await fetch(`https://bknd-game.bestian123.workers.dev/api/data/entity/hall_of_fame/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                record: {
+                    data: top10,
+                    difficulty: difficulty
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('後端回應:', data);
+    } catch (error) {
+        console.error('保存到後端時發生錯誤:', error);
+        // 即使後端失敗，本地儲存仍然有效
+    }
+    
     return top10;
 }
 
-function isTopScore(monstersKilled, difficulty) {
-    const hallOfFame = getHallOfFame(difficulty);
+async function isTopScore(monstersKilled, difficulty) {
+    const hallOfFame = await getHallOfFame(difficulty);
     if (hallOfFame.length < 10) return true;
     return monstersKilled > hallOfFame[hallOfFame.length - 1].monstersKilled;
 }
 
-function showHallOfFame(selectedTab = 'all') {
+async function showHallOfFame(selectedTab = 'all') {
     // 確保初始標籤是'all'
     selectedTab = selectedTab || 'all';
     const modalElement = document.createElement('div');
@@ -228,7 +298,7 @@ function showHallOfFame(selectedTab = 'all') {
     contentElement.style.overflow = 'auto';
     contentElement.style.textAlign = 'center';
     
-    function updateContent(tab) {
+    async function updateContent(tab) {
         let content = '<h2>🏆 名人堂 🏆</h2>';
         
         // 添加標籤按鈕
@@ -249,39 +319,46 @@ function showHallOfFame(selectedTab = 'all') {
         });
         content += '</div>';
         
-        // 獲取對應的排行榜數據
-        const hallOfFame = tab === 'all' ? getHallOfFame() : getHallOfFame(tab);
-        
-        if (hallOfFame.length === 0) {
-            content += '<p>還沒有任何記錄，成為第一個英雄吧！</p>';
-        } else {
-            content += '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">';
-            content += '<tr style="background-color: rgba(255, 255, 255, 0.1);"><th style="padding: 10px; border: 1px solid #666;">排名</th><th style="padding: 10px; border: 1px solid #666;">日期</th><th style="padding: 10px; border: 1px solid #666;">名字</th><th style="padding: 10px; border: 1px solid #666;">擊敗影子</th><th style="padding: 10px; border: 1px solid #666;">剩餘血量</th>';
+        try {
+            // 獲取對應的排行榜數據
+            const hallOfFame = tab === 'all' ? await getHallOfFame() : await getHallOfFame(tab);
             
-            // 只在總排行時顯示難度欄
-            if (tab === 'all') {
-                content += '<th style="padding: 10px; border: 1px solid #666;">難度</th>';
-            }
-            content += '</tr>';
+            console.log('獲取到的名人堂資料:', hallOfFame);
             
-            hallOfFame.slice(0, 10).forEach((record, index) => {
-                const rowStyle = index < 3 ? 'background-color: rgba(255, 215, 0, 0.2);' : '';
-                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-                const difficultyEmoji = record.difficulty === 'easy' ? '🟢' : record.difficulty === 'hard' ? '🟡' : '🔴';
+            if (!hallOfFame || hallOfFame.length === 0) {
+                content += '<p>還沒有任何記錄，成為第一個英雄吧！</p>';
+            } else {
+                content += '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">';
+                content += '<tr style="background-color: rgba(255, 255, 255, 0.1);"><th style="padding: 10px; border: 1px solid #666;">排名</th><th style="padding: 10px; border: 1px solid #666;">日期</th><th style="padding: 10px; border: 1px solid #666;">名字</th><th style="padding: 10px; border: 1px solid #666;">擊敗影子</th><th style="padding: 10px; border: 1px solid #666;">剩餘血量</th>';
                 
-                content += `<tr style="${rowStyle}">
-                    <td style="padding: 8px; border: 1px solid #666;">${medal} ${index + 1}</td>
-                    <td style="padding: 8px; border: 1px solid #666;">${record.date}</td>
-                    <td style="padding: 8px; border: 1px solid #666;">${record.name}</td>
-                    <td style="padding: 8px; border: 1px solid #666;">${record.monstersKilled}</td>
-                    <td style="padding: 8px; border: 1px solid #666;">${record.finalHealth}%</td>`;
-                
+                // 只在總排行時顯示難度欄
                 if (tab === 'all') {
-                    content += `<td style="padding: 8px; border: 1px solid #666;">${difficultyEmoji} ${record.difficulty}</td>`;
+                    content += '<th style="padding: 10px; border: 1px solid #666;">難度</th>';
                 }
                 content += '</tr>';
-            });
-            content += '</table>';
+                
+                hallOfFame.slice(0, 10).forEach((record, index) => {
+                    const rowStyle = index < 3 ? 'background-color: rgba(255, 215, 0, 0.2);' : '';
+                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                    const difficultyEmoji = record.difficulty === 'easy' ? '🟢' : record.difficulty === 'hard' ? '🟡' : '🔴';
+                    
+                    content += `<tr style="${rowStyle}">
+                        <td style="padding: 8px; border: 1px solid #666;">${medal} ${index + 1}</td>
+                        <td style="padding: 8px; border: 1px solid #666;">${record.date}</td>
+                        <td style="padding: 8px; border: 1px solid #666;">${record.name}</td>
+                        <td style="padding: 8px; border: 1px solid #666;">${record.monstersKilled}</td>
+                        <td style="padding: 8px; border: 1px solid #666;">${record.finalHealth}%</td>`;
+                    
+                    if (tab === 'all') {
+                        content += `<td style="padding: 8px; border: 1px solid #666;">${difficultyEmoji} ${record.difficulty}</td>`;
+                    }
+                    content += '</tr>';
+                });
+                content += '</table>';
+            }
+        } catch (error) {
+            console.error('載入名人堂資料時發生錯誤:', error);
+            content += '<p>載入資料時發生錯誤，請稍後再試。</p>';
         }
         
         content += '<button id="closeHallOfFame" style="padding: 10px 20px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); margin-top: 20px;">關閉</button>';
@@ -290,8 +367,8 @@ function showHallOfFame(selectedTab = 'all') {
     }
     
     // 全域函數供按鈕調用
-    window.updateHallOfFameTab = function(tab) {
-        updateContent(tab);
+    window.updateHallOfFameTab = async function(tab) {
+        await updateContent(tab);
         // 重新綁定關閉按鈕事件
         document.getElementById('closeHallOfFame').addEventListener('click', () => {
             document.body.removeChild(modalElement);
@@ -299,7 +376,7 @@ function showHallOfFame(selectedTab = 'all') {
         });
     };
     
-    updateContent(selectedTab);
+    await updateContent(selectedTab);
     modalElement.appendChild(contentElement);
     document.body.appendChild(modalElement);
     
@@ -896,53 +973,66 @@ function showGameOverMessage(message, isVictory) {
     
     // 練習模式不顯示排行榜相關內容
     if (selectedDifficulty !== 'practice') {
-        // 檢查是否進入Top 10
-        if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
-            content += `
-                <p style="color: gold;">🏆 恭喜進入名人堂！</p>
-                <input type="text" id="playerName" placeholder="輸入你的名字" maxlength="20" style="padding: 5px; margin: 10px; border-radius: 5px; border: none;">
-                <br>
-                <button id="saveScore" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #FF9800; color: white;">保存分數</button>
-            `;
-        }
-        
-        content += `
-            <button id="viewHallOfFame" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #9C27B0; color: white;">查看名人堂</button>
-        `;
-    }
-    
-    content += `
-        <button id="restartButton" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #4CAF50; color: white;">再玩一局</button>
-    `;
-    
-    messageElement.innerHTML = content;
-    document.body.appendChild(messageElement);
-
-    // 添加事件監聽器
-    document.getElementById('restartButton').addEventListener('click', restartGame);
-    
-    // 練習模式不添加排行榜相關事件監聽器
-    if (selectedDifficulty !== 'practice') {
-        document.getElementById('viewHallOfFame').addEventListener('click', () => showHallOfFame('all'));
-        
-        if (isVictory && isTopScore(monstersKilled, selectedDifficulty)) {
-            document.getElementById('saveScore').addEventListener('click', () => {
-                const playerName = document.getElementById('playerName').value.trim();
-                if (playerName) {
-                    saveToHallOfFame(playerName, monstersKilled, playerHealth, selectedDifficulty);
-                    alert('分數已保存到名人堂！');
-                    document.getElementById('saveScore').style.display = 'none';
-                    document.getElementById('playerName').style.display = 'none';
-                } else {
-                    alert('請輸入名字！');
-                }
-            });
+        // 檢查是否進入Top 10 - 使用 async 函數
+        const checkTopScore = async () => {
+            if (isVictory && await isTopScore(monstersKilled, selectedDifficulty)) {
+                content += `
+                    <p style="color: gold;">🏆 恭喜進入名人堂！</p>
+                    <input type="text" id="playerName" placeholder="輸入你的名字" maxlength="20" style="padding: 5px; margin: 10px; border-radius: 5px; border: none;">
+                    <br>
+                    <button id="saveScore" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #FF9800; color: white;">保存分數</button>
+                `;
+            }
             
-            // 讓輸入框獲得焦點
-            setTimeout(() => {
-                document.getElementById('playerName').focus();
-            }, 100);
-        }
+            content += `
+                <button id="viewHallOfFame" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #9C27B0; color: white;">查看名人堂</button>
+            `;
+            
+            content += `
+                <button id="restartButton" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #4CAF50; color: white;">再玩一局</button>
+            `;
+            
+            messageElement.innerHTML = content;
+            document.body.appendChild(messageElement);
+
+            // 添加事件監聽器
+            document.getElementById('restartButton').addEventListener('click', restartGame);
+            
+            // 練習模式不添加排行榜相關事件監聽器
+            if (selectedDifficulty !== 'practice') {
+                document.getElementById('viewHallOfFame').addEventListener('click', () => showHallOfFame('all'));
+                
+                if (isVictory && await isTopScore(monstersKilled, selectedDifficulty)) {
+                    document.getElementById('saveScore').addEventListener('click', async () => {
+                        const playerName = document.getElementById('playerName').value.trim();
+                        if (playerName) {
+                            await saveToHallOfFame(playerName, monstersKilled, playerHealth, selectedDifficulty);
+                            alert('分數已保存到名人堂！');
+                            document.getElementById('saveScore').style.display = 'none';
+                            document.getElementById('playerName').style.display = 'none';
+                        } else {
+                            alert('請輸入名字！');
+                        }
+                    });
+                    
+                    // 讓輸入框獲得焦點
+                    setTimeout(() => {
+                        document.getElementById('playerName').focus();
+                    }, 100);
+                }
+            }
+        };
+        
+        // 執行檢查
+        checkTopScore();
+    } else {
+        content += `
+            <button id="restartButton" style="margin: 5px; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); background-color: #4CAF50; color: white;">再玩一局</button>
+        `;
+        
+        messageElement.innerHTML = content;
+        document.body.appendChild(messageElement);
+        document.getElementById('restartButton').addEventListener('click', restartGame);
     }
 }
 
