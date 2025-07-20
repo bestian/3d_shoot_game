@@ -3,7 +3,7 @@
   "short_name": "柏拉圖射擊",
   "description": "體驗在柏拉圖空間中的刺激射擊遊戲！",
   "start_url": "./index.html",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
