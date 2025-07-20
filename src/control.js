@@ -59,6 +59,7 @@ export function initControls(
             if (eventType === 'keydown') {
                 keys[event.code] = true;
                 keys[event.key] = true; // 添加 key 屬性支援
+                keys[event.keyCode] = true; // 添加 keyCode 支援
                 
                 // 射擊控制 (空白鍵)
                 if (event.code === 'Space' || event.key === ' ' || event.keyCode === 32) {
@@ -81,6 +82,7 @@ export function initControls(
             } else if (eventType === 'keyup') {
                 keys[event.code] = false;
                 keys[event.key] = false; // 添加 key 屬性支援
+                keys[event.keyCode] = false; // 添加 keyCode 支援
             }
         }, { passive: false }); // 允許 preventDefault
     });
@@ -99,13 +101,28 @@ export function initControls(
     });
 
     // 添加 click 事件來確保文檔有焦點
-    document.addEventListener('click', () => {
+    document.addEventListener('click', (event) => {
+        // 如果點擊的是輸入框或相關元素，不要強制設定焦點
+        if (event.target.tagName === 'INPUT' || 
+            event.target.tagName === 'TEXTAREA' ||
+            event.target.contentEditable === 'true' ||
+            event.target.closest('input, textarea, [contenteditable]')) {
+            return;
+        }
         // 使用 body 元素來設定焦點
         document.body.focus();
     });
 
     // iPad 特定修復：防止虛擬鍵盤干擾
-    document.addEventListener('blur', () => {
+    document.addEventListener('blur', (event) => {
+        // 如果焦點轉移到輸入框，不要清除按鍵狀態
+        if (event.relatedTarget && (
+            event.relatedTarget.tagName === 'INPUT' || 
+            event.relatedTarget.tagName === 'TEXTAREA' ||
+            event.relatedTarget.contentEditable === 'true')) {
+            return;
+        }
+        
         // 當失去焦點時，清除所有按鍵狀態
         Object.keys(keys).forEach(key => {
             keys[key] = false;
@@ -116,6 +133,11 @@ export function initControls(
     const gameContainer = document.body;
     gameContainer.setAttribute('tabindex', '0');
     gameContainer.style.outline = 'none'; // 移除焦點邊框
+    
+    // 檢測是否在 PWA 環境中
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  window.matchMedia('(display-mode: fullscreen)').matches ||
+                  window.navigator.standalone === true;
     
     // 添加 iPad 外接鍵盤的特定處理
     if (navigator.userAgent.includes('iPad') || navigator.userAgent.includes('Macintosh')) {
@@ -134,6 +156,52 @@ export function initControls(
             keys[event.code] = false;
             keys[event.key] = false;
         });
+        
+        // PWA 特定處理
+        if (isPWA) {
+            // 在 PWA 中，添加更多的事件監聽器
+            ['keydown', 'keyup'].forEach(eventType => {
+                // 在多個目標上監聽事件
+                [document, document.body, window].forEach(target => {
+                    target.addEventListener(eventType, (event) => {
+                        if (eventType === 'keydown') {
+                            keys[event.code] = true;
+                            keys[event.key] = true;
+                            keys[event.keyCode] = true; // 添加 keyCode 支援
+                            
+                            // PWA 中的特殊處理
+                            if (event.code === 'Space' || event.key === ' ' || event.keyCode === 32) {
+                                event.preventDefault();
+                                if (!getGameOver()) {
+                                    const bullet = createBullet(camera);
+                                    scene.add(bullet);
+                                    onBulletCreated(bullet);
+                                }
+                            }
+                        } else if (eventType === 'keyup') {
+                            keys[event.code] = false;
+                            keys[event.key] = false;
+                            keys[event.keyCode] = false;
+                        }
+                    }, { capture: true, passive: false });
+                });
+            });
+            
+            // PWA 中確保焦點管理
+            setInterval(() => {
+                // 只在沒有輸入框獲得焦點時才強制設定焦點
+                const activeElement = document.activeElement;
+                const isInputElement = activeElement && (
+                    activeElement.tagName === 'INPUT' || 
+                    activeElement.tagName === 'TEXTAREA' ||
+                    activeElement.contentEditable === 'true'
+                );
+                
+                if (!isInputElement && activeElement !== document.body) {
+                    document.body.focus();
+                }
+            }, 1000);
+        }
     }
 
     initTouchControls(scene, camera, createBullet, getGameOver);
@@ -274,10 +342,10 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
     }
 
     // 支援多種按鍵代碼格式
-    const moveForward = keys['KeyW'] || keys['ArrowUp'] || keys['w'] || keys['W'] || keys['Up'];
-    const moveBackward = keys['KeyS'] || keys['ArrowDown'] || keys['s'] || keys['S'] || keys['Down'];
-    const moveLeft = keys['KeyA'] || keys['a'] || keys['A'] || keys['Left'];
-    const moveRight = keys['KeyD'] || keys['d'] || keys['D'] || keys['Right'];
+    const moveForward = keys['KeyW'] || keys['ArrowUp'] || keys['w'] || keys['W'] || keys['Up'] || keys[87] || keys[38];
+    const moveBackward = keys['KeyS'] || keys['ArrowDown'] || keys['s'] || keys['S'] || keys['Down'] || keys[83] || keys[40];
+    const moveLeft = keys['KeyA'] || keys['a'] || keys['A'] || keys['Left'] || keys[65] || keys[37];
+    const moveRight = keys['KeyD'] || keys['d'] || keys['D'] || keys['Right'] || keys[68] || keys[39];
 
     if (moveForward || moveBackward || moveLeft || moveRight) {
         const moveX = ((moveLeft ? -1 : 0) + (moveRight ? 1 : 0)) * moveSpeed;
@@ -302,10 +370,10 @@ function handleInput(camera, getGameOver, checkWallCollision, playerRadius, game
     }
 
     // 支援多種旋轉按鍵代碼
-    if (keys['ArrowLeft'] || keys['Left']) {
+    if (keys['ArrowLeft'] || keys['Left'] || keys[37]) {
         camera.rotation.y += keyboardRotateSpeed;
     }
-    if (keys['ArrowRight'] || keys['Right']) {
+    if (keys['ArrowRight'] || keys['Right'] || keys[39]) {
         camera.rotation.y -= keyboardRotateSpeed;
     }
 
